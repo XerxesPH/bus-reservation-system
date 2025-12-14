@@ -46,6 +46,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     // Booking Manager
     Route::get('/bookings', [AdminController::class, 'bookings'])->name('admin.bookings');
     Route::post('/bookings/{id}/cancel', [AdminController::class, 'cancelBooking'])->name('admin.cancel_booking');
+
+    Route::get('/admin/buses/{id}/edit', [App\Http\Controllers\AdminController::class, 'editBus'])->name('admin.buses.edit');
+    Route::put('/admin/buses/{id}', [App\Http\Controllers\AdminController::class, 'updateBus'])->name('admin.buses.update');
 });
 
 Route::middleware(['auth'])->group(function () {
