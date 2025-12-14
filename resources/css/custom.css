@@ -1,0 +1,74 @@
+/* General Font */
+body {
+    font-family: "Poppins", sans-serif;
+    background-color: #f8f9fa; /* Light Gray Background */
+}
+
+/* 1. Hero Section (Home Page) */
+.hero-section {
+    background: linear-gradient(rgba(0, 52, 102, 0.7), rgba(0, 52, 102, 0.7)),
+        url("https://images.unsplash.com/photo-1570125909232-eb263c188f7e?q=80&w=2071&auto=format&fit=crop");
+    background-size: cover;
+    background-position: center;
+    padding: 120px 0 160px 0; /* Extra padding at bottom for search box overlap */
+    color: white;
+    text-align: center;
+}
+
+/* 2. Floating Search Box */
+.search-box {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    margin-top: -80px; /* Pulls it up into the Hero section */
+    position: relative;
+    z-index: 10;
+}
+
+/* 3. Trip Cards (Search Results) */
+.trip-card {
+    border: none;
+    border-radius: 12px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    background: white;
+    overflow: hidden;
+}
+.trip-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+}
+.trip-time {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0d6efd; /* Bootstrap Primary Blue */
+}
+
+/* 4. Seat Selection Grid */
+.bus-layout {
+    background-color: #e9ecef;
+    padding: 20px;
+    border-radius: 20px 20px 5px 5px; /* Rounded front, square back */
+    border: 2px solid #dee2e6;
+    max-width: 350px;
+    margin: 0 auto;
+}
+.seat-btn {
+    width: 45px;
+    height: 45px;
+    margin: 5px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+.seat-btn:hover:not(:disabled) {
+    transform: scale(1.1);
+}
+.driver-seat {
+    text-align: right;
+    margin-bottom: 20px;
+    padding-right: 15px;
+    border-bottom: 2px dashed #ccc;
+    padding-bottom: 10px;
+}
