@@ -7,8 +7,8 @@ use App\Models\Schedule;
 use App\Models\Terminal;
 use App\Models\Booking;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB; // <--- ADDED THIS
-use Illuminate\Validation\ValidationException; // <--- ADDED FOR BETTER ERRORS
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class TripController extends Controller
 {
@@ -18,48 +18,41 @@ class TripController extends Controller
         $originId = $request->input('origin');
         $destinationId = $request->input('destination');
         $date = $request->input('date');
-        $pax = $request->input('pax', 1); // Default to 1 person
 
-        // 2. Find Schedules that match the route and date
-        $schedules = Schedule::where('origin_id', $originId)
+        // Passenger Counts
+        $adults = $request->input('adults', 1);
+        $children = $request->input('children', 0);
+
+        // 2. Query Outbound Trips (Standard)
+        $outboundTrips = Schedule::where('origin_id', $originId)
             ->where('destination_id', $destinationId)
             ->where('departure_date', $date)
-            ->with(['bus', 'origin', 'destination']) // Eager load data
+            ->with(['bus', 'origin', 'destination'])
             ->get();
 
-        // 3. FILTER: Only keep buses with enough seats
-        // We use the filter() method to check availability one by one
-        $availableTrips = $schedules->filter(function ($trip) use ($pax) {
+        // 3. Query Return Trips (If Round Trip selected)
+        $returnTrips = collect(); // Default to empty
+        if ($request->has('return_date') && $request->trip_type == 'roundtrip') {
+            $returnTrips = Schedule::where('origin_id', $destinationId) // Swap Origin/Dest
+                ->where('destination_id', $originId)
+                ->where('departure_date', $request->return_date)
+                ->with(['bus', 'origin', 'destination'])
+                ->get();
+        }
 
-            // Count how many seats are already confirmed/booked
-            $bookedSeats = Booking::where('schedule_id', $trip->id)
-                ->where('status', 'confirmed')
-                ->get()
-                ->pluck('seat_numbers')
-                ->flatten()
-                ->count();
-
-            // Calculate seats left
-            $seatsLeft = $trip->bus->capacity - $bookedSeats;
-
-            // Save this number so we can show it in the view later!
-            $trip->seats_left = $seatsLeft;
-
-            // Only return true (keep this trip) if there is enough space
-            return $seatsLeft >= $pax;
-        });
-
-        // 4. Get Terminal names for display
+        // 4. Get Terminals for Display
         $origin = Terminal::find($originId);
         $destination = Terminal::find($destinationId);
 
-        return view('trips.index', [
-            'trips' => $availableTrips,
-            'origin' => $origin,
-            'destination' => $destination,
-            'date' => $date,
-            'pax' => $pax
-        ]);
+        return view('trips.index', compact(
+            'outboundTrips',
+            'returnTrips',
+            'origin',
+            'destination',
+            'date',
+            'adults',
+            'children'
+        ));
     }
 
     public function selectSeats(Request $request)
@@ -67,13 +60,18 @@ class TripController extends Controller
         $scheduleId = $request->query('schedule_id');
         $trip = Schedule::with('bus', 'origin', 'destination')->findOrFail($scheduleId);
 
+        // Get seat info
         $occupiedSeats = Booking::where('schedule_id', $scheduleId)
             ->where('status', 'confirmed')
-            ->pluck('seat_numbers') // Assumes model casts this to array/json
+            ->pluck('seat_numbers')
             ->flatten()
             ->toArray();
 
-        return view('trips.seats', compact('trip', 'occupiedSeats'));
+        // Pass passenger counts if they exist in URL
+        $adults = $request->query('adults', 1);
+        $children = $request->query('children', 0);
+
+        return view('trips.seats', compact('trip', 'occupiedSeats', 'adults', 'children'));
     }
 
     public function bookTicket(Request $request)
@@ -83,55 +81,47 @@ class TripController extends Controller
             'guest_name' => 'required|string|max:255',
             'guest_email' => 'required|email',
             'selected_seats' => 'required', // JSON string
+            'adults' => 'required|integer|min:1',
+            'children' => 'required|integer|min:0',
         ]);
 
-        // Decode and force it to be an array
         $seats = json_decode($request->selected_seats, true);
+        $adults = (int) $request->adults;
+        $children = (int) $request->children;
+        $totalPax = $adults + $children;
 
-        if (empty($seats) || !is_array($seats)) {
-            return back()->withErrors(['selected_seats' => 'Please select at least one seat.']);
+        // Validation: Ensure seats matched selected passengers
+        if (count($seats) !== $totalPax) {
+            return back()->withErrors(['selected_seats' => "You selected $totalPax passengers but picked " . count($seats) . " seats."]);
         }
 
-        return DB::transaction(function () use ($request, $seats) {
-            // 1. Lock the row to prevent race conditions
-            // We also load the 'bus' relationship here to check capacity later
+        return DB::transaction(function () use ($request, $seats, $adults, $children) {
             $trip = Schedule::with('bus')->lockForUpdate()->find($request->schedule_id);
 
-            // --- SAFETY CHECK 1: Validate Seat Capacity ---
-            $maxCapacity = $trip->bus->capacity; // Assuming your Bus model has a 'capacity' column
-            foreach ($seats as $seat) {
-                if ($seat > $maxCapacity || $seat < 1) {
-                    throw ValidationException::withMessages([
-                        'selected_seats' => "Seat #$seat does not exist on this bus."
-                    ]);
-                }
-            }
-            // ----------------------------------------------
-
-            // 2. Check for double bookings (The Race Condition Check)
-            $existingBookings = Booking::where('schedule_id', $trip->id)
-                ->where('status', 'confirmed')
-                ->get();
-
+            // 1. Double Booking Check
+            $existingBookings = Booking::where('schedule_id', $trip->id)->where('status', 'confirmed')->get();
             $takenSeats = $existingBookings->pluck('seat_numbers')->flatten()->toArray();
 
             foreach ($seats as $seat) {
                 if (in_array($seat, $takenSeats)) {
-                    throw ValidationException::withMessages([
-                        'selected_seats' => "Seat $seat was just taken by another user. Please choose another."
-                    ]);
+                    throw ValidationException::withMessages(['selected_seats' => "Seat $seat was just taken."]);
                 }
             }
 
-            // 3. Calculate Total Price
-            $totalPrice = $trip->price * count($seats);
+            // 2. Calculate Price (20% Discount for Children)
+            // Example: Price is 500. Adult = 500. Child = 400.
+            $adultPrice = $trip->price * $adults;
+            $childPrice = ($trip->price * 0.8) * $children;
+            $totalPrice = $adultPrice + $childPrice;
 
-            // 4. Save Booking
+            // 3. Create Booking
             $booking = Booking::create([
                 'schedule_id' => $trip->id,
-                'user_id' => Auth::id(), // Returns NULL if guest. Ensure your DB 'user_id' column is nullable!
+                'user_id' => Auth::id(),
                 'guest_name' => $request->guest_name,
                 'guest_email' => $request->guest_email,
+                'adults' => $adults,       // <--- Saved
+                'children' => $children,   // <--- Saved
                 'seat_numbers' => $seats,
                 'total_price' => $totalPrice,
                 'status' => 'confirmed'
@@ -143,11 +133,9 @@ class TripController extends Controller
 
     public function showSuccess(Booking $booking)
     {
-        // SECURITY FIX: Ensure the user owns this booking
         if ($booking->user_id !== Auth::id()) {
-            abort(403, 'Unauthorized action.');
+            abort(403);
         }
-
         return view('bookings.success', compact('booking'));
     }
 }

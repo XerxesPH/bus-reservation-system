@@ -114,4 +114,26 @@ class AdminController extends Controller
         }
         $bus->delete();
     }
+
+    // Show Edit Form
+    public function editBus($id)
+    {
+        $bus = Bus::findOrFail($id);
+        return view('admin.edit_bus', compact('bus'));
+    }
+
+    // Process Update
+    public function updateBus(Request $request, $id)
+    {
+        $request->validate([
+            'code' => 'required|string',
+            'type' => 'required|in:deluxe,regular',
+            'capacity' => 'required|integer|min:10|max:60'
+        ]);
+
+        $bus = Bus::findOrFail($id);
+        $bus->update($request->all());
+
+        return redirect()->route('admin.dashboard')->with('success', 'Bus updated successfully!');
+    }
 }

@@ -8,12 +8,21 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-// Public Routes
+// Public Routes (Anyone can access)
 Route::get('/trips/search', [TripApiController::class, 'search']);
 Route::post('/book-ticket', [TripApiController::class, 'bookTicket']);
 
 // Protected Routes (Requires Login)
 Route::middleware('auth:sanctum')->group(function () {
-    // You can put routes here that require the user to be logged in
-    // Example: View My Booking History
+
+    // 1. View My Bookings
+    Route::get('/my-bookings', [TripApiController::class, 'myBookings']);
+
+    // 2. Cancel Booking (The "Delete" Requirement)
+    Route::delete('/bookings/{id}', [TripApiController::class, 'cancelBooking']);
+
+    // 3. Admin Only Route (Satisfies "Access Control" Requirement)
+    Route::middleware('admin')->get('/admin/all-bookings', function () {
+        return \App\Models\Booking::all();
+    });
 });

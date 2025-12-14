@@ -112,4 +112,35 @@ class TripApiController extends Controller
             ], 400); // 400 Bad Request
         }
     }
+
+    // DELETE /api/bookings/{id} (Satisfies "Delete" Operation)
+    public function cancelBooking($id)
+    {
+        // 1. Find Booking
+        $booking = Booking::find($id);
+
+        if (!$booking) {
+            return response()->json(['status' => 'error', 'message' => 'Booking not found'], 404);
+        }
+
+        // 2. Security Check (User must own the booking)
+        if ($booking->user_id !== Auth::guard('sanctum')->id()) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 403);
+        }
+
+        // 3. Perform Delete (Cancel)
+        $booking->update(['status' => 'cancelled']);
+
+        return response()->json(['status' => 'success', 'message' => 'Booking cancelled']);
+    }
+
+    // GET /api/my-bookings (Satisfies "Read" for Authenticated User)
+    public function myBookings(Request $request)
+    {
+        $bookings = Booking::where('user_id', Auth::guard('sanctum')->id())
+            ->with(['schedule.bus', 'schedule.origin', 'schedule.destination'])
+            ->get();
+
+        return response()->json(['status' => 'success', 'data' => $bookings]);
+    }
 }
