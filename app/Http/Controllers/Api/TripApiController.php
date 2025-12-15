@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\Schedule;
 use App\Models\Booking;
-use Illuminate\Support\Facades\DB;
+use App\Models\Schedule;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class TripApiController extends Controller
@@ -25,7 +25,7 @@ class TripApiController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -39,7 +39,7 @@ class TripApiController extends Controller
         // 3. Return JSON (Satisfies "Read" operation)
         return response()->json([
             'status' => 'success',
-            'data' => $trips
+            'data' => $trips,
         ], 200);
     }
 
@@ -52,7 +52,7 @@ class TripApiController extends Controller
             'guest_name' => 'required|string',
             'guest_email' => 'required|email',
             'selected_seats' => 'required|array', // API expects an actual array, not a JSON string
-            'selected_seats.*' => 'integer'
+            'selected_seats.*' => 'integer',
         ]);
 
         if ($validator->fails()) {
@@ -66,16 +66,18 @@ class TripApiController extends Controller
             $booking = DB::transaction(function () use ($request, $seats) {
                 $trip = Schedule::with('bus')->lockForUpdate()->find($request->schedule_id);
 
-                // Capacity Check
+                // Capacity Check (use null-safe access and fallback)
                 foreach ($seats as $seat) {
-                    if ($seat > $trip->bus->capacity || $seat < 1) {
+                    $capacity = $trip->bus?->capacity ?? 45;
+                    if ($seat > $capacity || $seat < 1) {
                         throw new \Exception("Seat #$seat does not exist.");
                     }
                 }
 
-                // Double Booking Check
+                // Double Booking Check (call ->get() so model casts apply)
                 $existing = Booking::where('schedule_id', $trip->id)
                     ->where('status', 'confirmed')
+                    ->get()
                     ->pluck('seat_numbers')
                     ->flatten()
                     ->toArray();
@@ -95,7 +97,7 @@ class TripApiController extends Controller
                     'guest_email' => $request->guest_email,
                     'seat_numbers' => $seats,
                     'total_price' => $trip->price * count($seats),
-                    'status' => 'confirmed'
+                    'status' => 'confirmed',
                 ]);
             });
 
@@ -103,12 +105,12 @@ class TripApiController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Booking successful',
-                'booking_id' => $booking->id
+                'booking_id' => $booking->id,
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 400); // 400 Bad Request
         }
     }
@@ -119,7 +121,7 @@ class TripApiController extends Controller
         // 1. Find Booking
         $booking = Booking::find($id);
 
-        if (!$booking) {
+        if (! $booking) {
             return response()->json(['status' => 'error', 'message' => 'Booking not found'], 404);
         }
 

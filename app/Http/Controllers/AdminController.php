@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Schedule;
-use App\Models\Bus;
-use App\Models\Terminal;
 use App\Models\Booking;
+use App\Models\Bus;
+use App\Models\Schedule;
+use App\Models\Terminal;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class AdminController extends Controller
 {
@@ -34,6 +34,7 @@ class AdminController extends Controller
     {
         $buses = Bus::all();
         $terminals = Terminal::all();
+
         return view('admin.create_schedule', compact('buses', 'terminals'));
     }
 
@@ -47,7 +48,7 @@ class AdminController extends Controller
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'times' => 'required|array', // e.g., ['08:00', '12:00']
-            'price' => 'required|numeric'
+            'price' => 'required|numeric',
         ]);
 
         $startDate = Carbon::parse($request->start_date);
@@ -65,14 +66,14 @@ class AdminController extends Controller
                     ->where('departure_time', $time)
                     ->exists();
 
-                if (!$exists) {
+                if (! $exists) {
                     Schedule::create([
                         'bus_id' => $request->bus_id,
                         'origin_id' => $request->origin_id,
                         'destination_id' => $request->destination_id,
                         'departure_date' => $startDate->format('Y-m-d'),
                         'departure_time' => $time,
-                        'price' => $request->price
+                        'price' => $request->price,
                     ]);
                 }
                 $count++;
@@ -103,7 +104,7 @@ class AdminController extends Controller
         // Update status to cancelled
         $booking->update(['status' => 'cancelled']);
 
-        return back()->with('success', 'Booking #' . $id . ' has been cancelled. Seats are now free.');
+        return back()->with('success', 'Booking #'.$id.' has been cancelled. Seats are now free.');
     }
 
     public function deleteBus($id)
@@ -119,6 +120,7 @@ class AdminController extends Controller
     public function editBus($id)
     {
         $bus = Bus::findOrFail($id);
+
         return view('admin.edit_bus', compact('bus'));
     }
 
@@ -128,7 +130,7 @@ class AdminController extends Controller
         $request->validate([
             'code' => 'required|string',
             'type' => 'required|in:deluxe,regular',
-            'capacity' => 'required|integer|min:10|max:60'
+            'capacity' => 'required|integer|min:10|max:60',
         ]);
 
         $bus = Bus::findOrFail($id);

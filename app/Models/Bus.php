@@ -13,7 +13,7 @@ class Bus extends Model
     protected $fillable = [
         'code',      // e.g., BUS-101
         'type',      // e.g., Deluxe
-        'capacity'   // e.g., 20
+        'capacity',   // e.g., 20
     ];
 
     // 2. Define Relationship: A bus has many trips (schedules)
