@@ -1,26 +1,54 @@
 @extends('layouts.app')
 
 @section('content')
+
+{{--
+    LOGIC BLOCK: 
+    Determine if this is the First Leg (Outbound) or Final Leg (Return/OneWay).
+--}}
+@php
+// We get the 'leg' param from the URL (passed by the Search Controller)
+$currentLeg = request('leg', 'oneway');
+$isOutbound = ($currentLeg == 'outbound');
+
+// Dynamic Form Action
+$formAction = $isOutbound ? route('trips.store_outbound') : route('trips.book');
+
+// Dynamic Button Text
+$btnText = $isOutbound ? 'CONFIRM & SELECT RETURN TRIP' : 'PROCEED TO PAYMENT';
+$btnColor = $isOutbound ? 'btn-dark' : 'btn-success';
+@endphp
+
 <div class="container py-5">
     <div class="row g-5">
 
         <div class="col-lg-7">
-            <h4 class="mb-4 fw-bold">Select Seats</h4>
+            <h4 class="mb-4 fw-bold">
+                {{ $isOutbound ? 'Step 1: Outbound Seats' : 'Select Seats' }}
+            </h4>
 
-            <div class="bus-layout shadow-sm">
-                <div class="driver-seat">
+            <div class="alert alert-info d-flex align-items-center">
+                <i class="fa-solid fa-circle-info me-2"></i>
+                <div>
+                    Please select <strong>{{ $adults + $children }}</strong> seat(s).
+                    <small class="d-block text-muted">({{ $adults }} Adults, {{ $children }} Children)</small>
+                </div>
+            </div>
+
+            <div class="bus-layout shadow-sm p-4 bg-light rounded-4">
+                <div class="driver-seat mb-4 text-end border-bottom pb-2">
                     <span class="badge bg-secondary"><i class="fa-solid fa-user-tie me-1"></i> Driver</span>
                 </div>
 
                 <div class="row justify-content-center g-2">
                     @php
                     $seats = $trip->bus->capacity;
-                    $cols = 4; // 4 seats per row
                     @endphp
 
                     @for($i = 1; $i <= $seats; $i++)
                         @php $isTaken=in_array($i, $occupiedSeats); @endphp
 
+                        {{-- Aisle Spacer --}}
                         @if(($i-1) % 4==2)
                         <div class="col-1">
                 </div>
@@ -28,7 +56,7 @@
 
                 <div class="col-2 text-center">
                     <button type="button"
-                        class="btn w-100 seat-btn {{ $isTaken ? 'btn-secondary disabled' : 'btn-outline-primary' }}"
+                        class="btn w-100 seat-btn fw-bold {{ $isTaken ? 'btn-secondary disabled opacity-50' : 'btn-outline-primary' }}"
                         data-seat="{{ $i }}"
                         {{ $isTaken ? 'disabled' : '' }}
                         onclick="toggleSeat(this)">
@@ -56,46 +84,84 @@
         </div>
     </div>
 
+    {{-- SIDEBAR SUMMARY --}}
     <div class="col-lg-5">
-        <div class="card shadow border-0 sticky-top" style="top: 100px;">
-            <div class="card-header bg-primary text-white py-3">
-                <h5 class="mb-0"><i class="fa-solid fa-receipt me-2"></i> Trip Summary</h5>
+        <div class="card shadow border-0 sticky-top rounded-4" style="top: 100px;">
+            <div class="card-header {{ $isOutbound ? 'bg-dark' : 'bg-primary' }} text-white py-3">
+                <h5 class="mb-0">
+                    <i class="fa-solid fa-receipt me-2"></i>
+                    {{ $isOutbound ? 'Outbound Summary' : 'Trip Summary' }}
+                </h5>
             </div>
             <div class="card-body p-4">
                 <h5 class="fw-bold">{{ $trip->origin->city }} <i class="fa-solid fa-arrow-right mx-2 text-muted"></i> {{ $trip->destination->city }}</h5>
                 <p class="text-muted border-bottom pb-3">
-                    {{ \Carbon\Carbon::parse($trip->departure_date)->format('D, M d') }} at
+                    {{ \Carbon\Carbon::parse($trip->departure_date)->format('D, M d, Y') }} at
                     {{ \Carbon\Carbon::parse($trip->departure_time)->format('h:i A') }}
                 </p>
+
+                <div class="mb-3 small">
+                    <div class="d-flex justify-content-between">
+                        <span>Adults ({{ $adults }} x ₱{{ number_format($trip->price, 0) }})</span>
+                        <span class="fw-bold">₱{{ number_format($trip->price * $adults, 2) }}</span>
+                    </div>
+                    @if($children > 0)
+                    <div class="d-flex justify-content-between text-success">
+                        <span>Children ({{ $children }} x ₱{{ number_format($trip->price * 0.8, 0) }})</span>
+                        <span class="fw-bold">₱{{ number_format(($trip->price * 0.8) * $children, 2) }}</span>
+                    </div>
+                    @endif
+                </div>
 
                 <div class="d-flex justify-content-between mb-2">
                     <span>Selected Seats:</span>
                     <span class="fw-bold text-primary" id="display-seats">-</span>
                 </div>
 
-                <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
                     <span class="h5 mb-0">Total</span>
                     <span class="h3 fw-bold text-success mb-0">₱ <span id="total-price">0.00</span></span>
                 </div>
 
-                <form action="{{ url('/book-ticket') }}" method="POST" class="mt-4">
+                {{-- DYNAMIC FORM START --}}
+                <form action="{{ $formAction }}" method="POST" class="mt-4">
                     @csrf
                     <input type="hidden" name="schedule_id" value="{{ $trip->id }}">
+                    <input type="hidden" name="adults" value="{{ $adults }}">
+                    <input type="hidden" name="children" value="{{ $children }}">
                     <input type="hidden" name="selected_seats" id="input-seats" required>
+
+                    {{--
+                            CRITICAL: STATE PRESERVATION 
+                            If this is the outbound leg, we MUST pass the return trip details 
+                            as hidden fields so the controller can redirect us correctly for Step 2.
+                        --}}
+                    @if($isOutbound)
+                    <input type="hidden" name="return_date" value="{{ request('return_date') }}">
+                    <input type="hidden" name="return_origin" value="{{ request('return_origin') }}">
+                    <input type="hidden" name="return_destination" value="{{ request('return_destination') }}">
+
+                    {{-- Also pass original search params just in case --}}
+                    <input type="hidden" name="original_date" value="{{ request('date') }}">
+                    <input type="hidden" name="original_origin" value="{{ request('origin') }}">
+                    <input type="hidden" name="original_destination" value="{{ request('destination') }}">
+                    @endif
 
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted">Passenger Name</label>
-                        <input type="text" name="guest_name" class="form-control" required value="{{ Auth::check() ? Auth::user()->name : '' }}">
+                        <input type="text" name="guest_name" class="form-control" required value="{{ Auth::check() ? Auth::user()->name : '' }}" placeholder="Full Name">
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted">Contact Email</label>
-                        <input type="email" name="guest_email" class="form-control" required value="{{ Auth::check() ? Auth::user()->email : '' }}">
+                        <input type="email" name="guest_email" class="form-control" required value="{{ Auth::check() ? Auth::user()->email : '' }}" placeholder="name@example.com">
                     </div>
 
-                    <button type="submit" class="btn btn-success w-100 py-3 fw-bold shadow-sm" id="checkout-btn" disabled>
-                        PROCEED TO PAYMENT
+                    <button type="submit" class="btn {{ $btnColor }} w-100 py-3 fw-bold shadow-sm" id="checkout-btn" disabled>
+                        {{ $btnText }}
                     </button>
                 </form>
+                {{-- DYNAMIC FORM END --}}
+
             </div>
         </div>
     </div>
@@ -103,19 +169,30 @@
 </div>
 
 <script>
-    // (JavaScript logic remains the same as previous step, 
-    // just ensure class names match the new HTML structure)
     let selectedSeats = [];
-    const pricePerSeat = Number("{{ $trip->price }}");
+
+    const adults = Number("{{ $adults }}");
+    const children = Number("{{ $children }}");
+    const totalPax = adults + children;
+
+    const basePrice = Number("{{ $trip->price }}");
+    const childPrice = basePrice * 0.8;
+    const finalTotal = (adults * basePrice) + (children * childPrice);
 
     function toggleSeat(button) {
         const seatNum = button.getAttribute('data-seat');
 
         if (selectedSeats.includes(seatNum)) {
+            // Deselect
             selectedSeats = selectedSeats.filter(s => s !== seatNum);
             button.classList.remove('btn-warning');
             button.classList.add('btn-outline-primary');
         } else {
+            // Select (Enforce Limit)
+            if (selectedSeats.length >= totalPax) {
+                alert(`You can only select ${totalPax} seat(s).`);
+                return;
+            }
             selectedSeats.push(seatNum);
             button.classList.remove('btn-outline-primary');
             button.classList.add('btn-warning');
@@ -127,19 +204,28 @@
         const count = selectedSeats.length;
         document.getElementById('display-seats').innerText = count > 0 ? selectedSeats.join(', ') : '-';
 
-        const total = count * pricePerSeat;
-        document.getElementById('total-price').innerText = total.toLocaleString('en-US', {
+        // Update Hidden Input
+        document.getElementById('input-seats').value = JSON.stringify(selectedSeats);
+
+        // Enable Button only if exact number of seats selected
+        const btn = document.getElementById('checkout-btn');
+        const priceDisplay = document.getElementById('total-price');
+
+        // Always show the target price
+        priceDisplay.innerText = finalTotal.toLocaleString('en-US', {
             minimumFractionDigits: 2
         });
 
-        document.getElementById('input-seats').value = JSON.stringify(selectedSeats);
-
-        const btn = document.getElementById('checkout-btn');
-        if (count > 0) {
+        if (count === totalPax) {
             btn.removeAttribute('disabled');
         } else {
             btn.setAttribute('disabled', 'true');
         }
     }
+
+    // Init price display
+    document.getElementById('total-price').innerText = finalTotal.toLocaleString('en-US', {
+        minimumFractionDigits: 2
+    });
 </script>
 @endsection

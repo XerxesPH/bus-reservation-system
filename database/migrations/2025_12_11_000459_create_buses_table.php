@@ -11,7 +11,8 @@ return new class extends Migration
         Schema::create('buses', function (Blueprint $table) {
             $table->id();
             $table->string('code')->unique();
-            $table->enum('type', ['deluxe', 'regular']);
+            // FIXED: Added 'luxury' to the allowed list
+            $table->enum('type', ['deluxe', 'regular', 'luxury']);
             $table->integer('capacity');
             $table->timestamps();
         });

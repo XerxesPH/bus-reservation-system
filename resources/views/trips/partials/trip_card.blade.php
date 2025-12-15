@@ -29,7 +29,12 @@
                 </div>
 
                 @if($trip->seats_left > 0)
-                <a href="{{ route('trips.seats', ['schedule_id' => $trip->id]) }}"
+                {{-- FIXED: Added 'adults' and 'children' to the parameters --}}
+                <a href="{{ route('trips.seats', [
+                        'schedule_id' => $trip->id,
+                        'adults' => request('adults', 1),
+                        'children' => request('children', 0)
+                    ]) }}"
                     class="btn {{ $btnClass ?? 'btn-primary' }} w-100 fw-bold">
                     {{ $btnLabel ?? 'Select Seats' }} <i class="fa-solid fa-chevron-right ms-1"></i>
                 </a>

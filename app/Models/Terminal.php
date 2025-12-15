@@ -12,6 +12,6 @@ class Terminal extends Model
     // 1. Allow these columns to be filled
     protected $fillable = [
         'name', // e.g., Cubao Station
-        'city'  // e.g., Manila
+        'city',  // e.g., Manila
     ];
 }

@@ -9,31 +9,55 @@ class Schedule extends Model
 {
     use HasFactory;
 
-    // 1. Allow these columns to be filled
     protected $fillable = [
         'bus_id',
         'origin_id',
         'destination_id',
         'departure_date',
         'departure_time',
-        'price'
+        'price',
     ];
 
-    // 2. Relationship: This schedule belongs to a specific Bus
+    // IMPORTANT: This tells Laravel to always calculate 'seats_left'
+    protected $appends = ['seats_left'];
+
     public function bus()
     {
         return $this->belongsTo(Bus::class);
     }
 
-    // 3. Relationship: origin_id links to the Terminal model
     public function origin()
     {
         return $this->belongsTo(Terminal::class, 'origin_id');
     }
 
-    // 4. Relationship: destination_id links to the Terminal model
     public function destination()
     {
         return $this->belongsTo(Terminal::class, 'destination_id');
+    }
+
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class);
+    }
+
+    // THIS IS THE MISSING LOGIC
+    public function getSeatsLeftAttribute()
+    {
+        // 1. Get all confirmed bookings for this specific trip
+        $bookings = $this->bookings()->where('status', 'confirmed')->get();
+
+        $bookedCount = 0;
+        foreach ($bookings as $booking) {
+            // 2. Sum up the seats from the JSON array
+            $seats = $booking->seat_numbers;
+            if (is_array($seats)) {
+                $bookedCount += count($seats);
+            }
+        }
+
+        // 3. Return (Bus Capacity) - (Booked Seats)
+        // If bus relation is missing, default to 45
+        return ($this->bus->capacity ?? 45) - $bookedCount;
     }
 }
