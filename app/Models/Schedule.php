@@ -44,20 +44,28 @@ class Schedule extends Model
     // THIS IS THE MISSING LOGIC
     public function getSeatsLeftAttribute()
     {
-        // 1. Get all confirmed bookings for this specific trip
-        $bookings = $this->bookings()->where('status', 'confirmed')->get();
-
+        // 1. Count seats where this schedule is the OUTBOUND leg
+        $outboundBookings = $this->bookings()->where('status', 'confirmed')->get();
         $bookedCount = 0;
-        foreach ($bookings as $booking) {
-            // 2. Sum up the seats from the JSON array
-            $seats = $booking->seat_numbers;
-            if (is_array($seats)) {
-                $bookedCount += count($seats);
+        foreach ($outboundBookings as $b) {
+            if (is_array($b->seat_numbers)) {
+                $bookedCount += count($b->seat_numbers);
             }
         }
 
-        // 3. Return (Bus Capacity) - (Booked Seats)
-        // If bus relation is missing, default to 45
-        return ($this->bus->capacity ?? 45) - $bookedCount;
+        // 2. Count seats where this schedule is the RETURN leg
+        // We can't use the simple $this->bookings() relation here because that only looks at schedule_id
+        $returnBookings = Booking::where('return_schedule_id', $this->id)
+            ->where('status', 'confirmed')
+            ->get();
+
+        foreach ($returnBookings as $b) {
+            if (is_array($b->return_seat_numbers)) {
+                $bookedCount += count($b->return_seat_numbers);
+            }
+        }
+
+        $capacity = $this->bus->capacity ?? 0;
+        return $capacity - $bookedCount;
     }
 }
