@@ -4,11 +4,15 @@
 <div class="container mt-5">
     <div class="card shadow-lg mx-auto" style="max-width: 700px;">
         <div class="card-header bg-primary text-white">
-            <h4>Generate Bus Schedules</h4>
+            <h4>Create Automated Route Plan</h4>
         </div>
         <div class="card-body">
+            <p class="text-muted small mb-4">
+                <i class="fa-solid fa-circle-info me-1"></i>
+                Define a recurring schedule below. The system will check this plan daily and automatically create trips for the upcoming days.
+            </p>
 
-            <form action="{{ route('admin.store_schedule') }}" method="POST">
+            <form action="{{ route('admin.templates.store') }}" method="POST">
                 @csrf
 
                 <div class="row mb-3">
@@ -47,20 +51,9 @@
 
                 <hr>
 
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label>Start Date</label>
-                        <input type="date" name="start_date" class="form-control" required min="{{ date('Y-m-d') }}">
-                    </div>
-                    <div class="col-md-6">
-                        <label>End Date</label>
-                        <input type="date" name="end_date" class="form-control" required min="{{ date('Y-m-d') }}">
-                    </div>
-                    <small class="text-muted">Trips will be created for every day in this range.</small>
-                </div>
-
+                {{-- DAY SELECTION --}}
                 <div class="mb-4">
-                    <label class="form-label fw-bold">Active Days</label>
+                    <label class="form-label fw-bold">Running Days (Recurring)</label>
                     <div class="d-flex flex-wrap gap-3 mb-2">
                         @php $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']; @endphp
                         @foreach($days as $day)
@@ -70,21 +63,15 @@
                         </div>
                         @endforeach
                     </div>
-                    <div class="btn-group btn-group-sm mb-2">
+                    <div class="btn-group btn-group-sm">
                         <button type="button" class="btn btn-outline-secondary" onclick="selectDays(['Mon','Tue','Wed','Thu','Fri'])">Weekdays</button>
                         <button type="button" class="btn btn-outline-secondary" onclick="selectDays(['Sat','Sun'])">Weekends</button>
                         <button type="button" class="btn btn-outline-secondary" onclick="selectDays(['Mon','Tue','Wed','Thu','Fri','Sat','Sun'])">All</button>
                     </div>
-                    <small class="text-muted d-block">Uncheck days to exclude them.</small>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Exclude Specific Dates (Holidays/Maintenance)</label>
-                    <textarea name="excluded_dates" class="form-control" rows="2" placeholder="YYYY-MM-DD, YYYY-MM-DD (e.g., 2025-12-25)"></textarea>
-                    <small class="text-muted">Enter dates separated by commas to skip schedule generation for these specific dates.</small>
-                </div>
-
-                <label class="form-label fw-bold">Select Departure Times (Hourly)</label>
+                {{-- TIME SELECTION --}}
+                <label class="form-label fw-bold">Departure Times (Daily)</label>
                 <div class="d-flex flex-wrap gap-2 mb-2">
                     @for($h = 4; $h <= 21; $h++)
                         @php
@@ -102,7 +89,7 @@
             <button type="button" class="btn btn-outline-secondary" onclick="toggleTimes(false)">Clear All</button>
         </div>
 
-        <button type="submit" class="btn btn-success w-100 py-2">Generate Schedules</button>
+        <button type="submit" class="btn btn-success w-100 py-2">Save Route Plan</button>
         </form>
     </div>
 </div>

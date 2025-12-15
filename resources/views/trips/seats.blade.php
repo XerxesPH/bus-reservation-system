@@ -130,12 +130,14 @@ $btnColor = $isOutbound ? 'btn-dark' : 'btn-success';
                     <input type="hidden" name="adults" value="{{ $adults }}">
                     <input type="hidden" name="children" value="{{ $children }}">
 
+                    {{-- CRITICAL: Pass Trip Type (oneway/roundtrip) to enforce correct booking logic --}}
+                    <input type="hidden" name="trip_type" value="{{ $searchParams['trip_type'] }}">
+
                     {{-- Seat Data --}}
                     <input type="hidden" name="selected_seats" id="input-seats" required>
 
                     @if($isOutbound)
                     {{-- CRITICAL: Pass Return Trip details so we can Redirect to Step 2 --}}
-                    <input type="hidden" name="trip_type" value="roundtrip">
 
                     {{-- Use request()->input to prevent errors if keys are missing --}}
                     <input type="hidden" name="return_date" value="{{ request()->input('return_date') }}">

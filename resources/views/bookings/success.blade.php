@@ -47,31 +47,31 @@
 
             {{-- Return Trip Details (if it exists) --}}
             @if($booking->return_schedule_id && $booking->returnSchedule)
-                <h6 class="text-danger fw-bold border-bottom pb-2 my-3">Return Trip</h6>
+            <h6 class="text-danger fw-bold border-bottom pb-2 my-3">Return Trip</h6>
 
-                <div class="row mb-3">
-                    <div class="col-6 text-muted">Route:</div>
-                    <div class="col-6 text-end fw-bold">
-                        {{ $booking->returnSchedule->origin->city }} ➔ {{ $booking->returnSchedule->destination->city }}
-                    </div>
+            <div class="row mb-3">
+                <div class="col-6 text-muted">Route:</div>
+                <div class="col-6 text-end fw-bold">
+                    {{ $booking->returnSchedule->origin->city }} ➔ {{ $booking->returnSchedule->destination->city }}
                 </div>
+            </div>
 
-                <div class="row mb-3">
-                    <div class="col-6 text-muted">Departure:</div>
-                    <div class="col-6 text-end fw-bold">
-                        {{ \Carbon\Carbon::parse($booking->returnSchedule->departure_date)->format('M d, Y') }}<br>
-                        {{ \Carbon\Carbon::parse($booking->returnSchedule->departure_time)->format('h:i A') }}
-                    </div>
+            <div class="row mb-3">
+                <div class="col-6 text-muted">Departure:</div>
+                <div class="col-6 text-end fw-bold">
+                    {{ \Carbon\Carbon::parse($booking->returnSchedule->departure_date)->format('M d, Y') }}<br>
+                    {{ \Carbon\Carbon::parse($booking->returnSchedule->departure_time)->format('h:i A') }}
                 </div>
+            </div>
 
-                <div class="row mb-3">
-                    <div class="col-6 text-muted">Seats:</div>
-                    <div class="col-6 text-end fw-bold">
-                        @foreach($booking->return_seat_numbers as $seat)
-                        <span class="badge bg-primary">{{ $seat }}</span>
-                        @endforeach
-                    </div>
+            <div class="row mb-3">
+                <div class="col-6 text-muted">Seats:</div>
+                <div class="col-6 text-end fw-bold">
+                    @foreach($booking->return_seat_numbers as $seat)
+                    <span class="badge bg-primary">{{ $seat }}</span>
+                    @endforeach
                 </div>
+            </div>
             @endif
 
 

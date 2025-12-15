@@ -2,6 +2,16 @@
 
 @section('content')
 
+{{-- ERROR ALERT --}}
+@if(session('error'))
+<div class="container mt-4">
+    <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+        <i class="fa-solid fa-circle-exclamation me-2"></i> {{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+</div>
+@endif
+
 {{-- 1. HERO SECTION --}}
 <div class="container mt-4">
     <div class="row align-items-center">
@@ -35,17 +45,7 @@
     <div class="text-center mb-4">
         <h2 class="fw-bold">Book Now</h2>
 
-        {{-- Radio Buttons --}}
-        <div class="d-inline-flex gap-4 mt-2">
-            <div class="form-check">
-                <input class="form-check-input" type="radio" name="trip_type" id="oneWay" value="oneway" checked onclick="toggleLayout(false)">
-                <label class="form-check-label fw-bold small text-uppercase" for="oneWay">One Way</label>
-            </div>
-            <div class="form-check">
-                <input class="form-check-input" type="radio" name="trip_type" id="roundTrip" value="roundtrip" onclick="toggleLayout(true)">
-                <label class="form-check-label fw-bold small text-uppercase" for="roundTrip">Round Trip</label>
-            </div>
-        </div>
+
     </div>
 
     {{-- FORM BOX --}}
@@ -128,6 +128,22 @@
                 <div class="custom-input-group h-100 d-flex flex-column justify-content-center bg-white border border-danger">
                     <label class="custom-input-label text-danger">RETURN DATE:</label>
                     <input type="text" name="return_date" class="custom-input-field" placeholder="DD/MM/YYYY" onfocus="(this.type='date')" min="{{ date('Y-m-d') }}">
+                </div>
+            </div>
+        </div>
+
+        {{-- NEW ROW for Trip Type --}}
+        <div class="row justify-content-center g-3 mt-3">
+            <div class="col-md-8 text-center">
+                <div class="d-inline-flex gap-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="trip_type" id="oneWay" value="oneway" checked onclick="toggleLayout(false)">
+                        <label class="form-check-label fw-bold small text-uppercase" for="oneWay">One Way</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="trip_type" id="roundTrip" value="roundtrip" onclick="toggleLayout(true)">
+                        <label class="form-check-label fw-bold small text-uppercase" for="roundTrip">Round Trip</label>
+                    </div>
                 </div>
             </div>
         </div>
@@ -294,8 +310,20 @@
         const returnRow = document.getElementById('returnRow');
         returnRow.style.display = isRoundTrip ? 'flex' : 'none';
 
+        // Toggle REQUIRED attributes for return fields
+        const retOrigin = document.querySelector('select[name="return_origin"]');
+        const retDest = document.querySelector('select[name="return_destination"]');
+        const retDate = document.querySelector('input[name="return_date"]');
+
         if (isRoundTrip) {
             returnRow.classList.add('animate__animated', 'animate__fadeIn');
+            retOrigin.setAttribute('required', 'required');
+            retDest.setAttribute('required', 'required');
+            retDate.setAttribute('required', 'required');
+        } else {
+            retOrigin.removeAttribute('required');
+            retDest.removeAttribute('required');
+            retDate.removeAttribute('required');
         }
     }
 </script>

@@ -4,8 +4,13 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Admin Dashboard</h2>
-        <a href="{{ route('admin.bookings') }}" class="btn btn-outline-dark ms-2">View All Bookings</a>
-        <a href="{{ route('admin.create_schedule') }}" class="btn btn-primary">+ Generate New Schedules</a>
+        <div>
+            <a href="{{ route('admin.templates') }}" class="btn btn-warning ms-2 text-dark fw-bold"><i class="fa-solid fa-robot"></i> Route Plans (Auto)</a>
+            <a href="{{ route('admin.schedules') }}" class="btn btn-outline-primary ms-2">Manage Schedules</a>
+            <a href="{{ route('admin.buses') }}" class="btn btn-outline-secondary ms-2">Manage Fleet</a>
+            <a href="{{ route('admin.bookings') }}" class="btn btn-outline-dark ms-2">View All Bookings</a>
+            <a href="{{ route('admin.create_schedule') }}" class="btn btn-primary ms-2">+ Generate New Schedules</a>
+        </div>
     </div>
 
     <div class="row text-center mb-4">

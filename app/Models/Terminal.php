@@ -13,5 +13,9 @@ class Terminal extends Model
     protected $fillable = [
         'name', // e.g., Cubao Station
         'city',  // e.g., Manila
+        'province',
+        'type',
+        'latitude',
+        'longitude',
     ];
 }

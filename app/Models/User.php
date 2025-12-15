@@ -22,7 +22,13 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'contact_number',
     ];
+
+    public function paymentMethods()
+    {
+        return $this->hasMany(PaymentMethod::class);
+    }
 
     /**
      * The attributes that should be hidden for serialization.
