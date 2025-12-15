@@ -84,6 +84,17 @@ class TripController extends Controller
             ->flatten()
             ->toArray();
 
+        $outboundBookings = Booking::where('schedule_id', $scheduleId)
+            ->where('status', 'confirmed')
+            ->pluck('seat_numbers')
+            ->flatten();
+
+        $returnBookings = Booking::where('return_schedule_id', $scheduleId)
+            ->where('status', 'confirmed')
+            ->pluck('return_seat_numbers') // Note: Fetching from return_seat_numbers column
+            ->flatten();
+
+        $occupiedSeats = $outboundBookings->merge($returnBookings)->unique()->toArray();
         // 4. Pass $adults and $children to the view
         return view('trips.seats', compact('trip', 'occupiedSeats', 'leg', 'adults', 'children'));
     }
@@ -145,13 +156,13 @@ class TripController extends Controller
                 $outboundTrip = Schedule::find($outboundData['schedule_id']);
                 $outboundSeats = $outboundData['seats'];
                 $outboundPrice = ($outboundTrip->price * $outboundData['adults']) +
-                                 (($outboundTrip->price * 0.8) * $outboundData['children']);
+                    (($outboundTrip->price * 0.8) * $outboundData['children']);
 
                 // 2. Get Return data from current Request
                 $returnTrip = Schedule::find($request->schedule_id);
                 $returnSeats = json_decode($request->selected_seats, true);
                 $returnPrice = ($returnTrip->price * $request->adults) +
-                               (($returnTrip->price * 0.8) * $request->children);
+                    (($returnTrip->price * 0.8) * $request->children);
 
                 // 3. Create a SINGLE booking record
                 $newBooking = Booking::create([
@@ -177,7 +188,6 @@ class TripController extends Controller
                 session()->forget('outbound_selection');
 
                 return $newBooking;
-
             } else {
                 // --- ONE-WAY TRIP LOGIC ---
 

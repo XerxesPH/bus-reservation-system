@@ -7,9 +7,9 @@
     Determine if this is the First Leg (Outbound) or Final Leg (Return/OneWay).
 --}}
 @php
-// We get the 'leg' param from the URL (passed by the Search Controller)
-$currentLeg = request('leg', 'oneway');
-$isOutbound = ($currentLeg == 'outbound');
+// FIX: Use the $leg variable passed from the Controller.
+// Do NOT use request('leg') here, as it might mismatch the controller's default.
+$isOutbound = ($leg == 'outbound');
 
 // Dynamic Form Action
 $formAction = $isOutbound ? route('trips.store_outbound') : route('trips.book');
@@ -129,22 +129,23 @@ $btnColor = $isOutbound ? 'btn-dark' : 'btn-success';
                     <input type="hidden" name="schedule_id" value="{{ $trip->id }}">
                     <input type="hidden" name="adults" value="{{ $adults }}">
                     <input type="hidden" name="children" value="{{ $children }}">
+
+                    {{-- Seat Data --}}
                     <input type="hidden" name="selected_seats" id="input-seats" required>
 
-                    {{--
-                            CRITICAL: STATE PRESERVATION 
-                            If this is the outbound leg, we MUST pass the return trip details 
-                            as hidden fields so the controller can redirect us correctly for Step 2.
-                        --}}
                     @if($isOutbound)
-                    <input type="hidden" name="return_date" value="{{ request('return_date') }}">
-                    <input type="hidden" name="return_origin" value="{{ request('return_origin') }}">
-                    <input type="hidden" name="return_destination" value="{{ request('return_destination') }}">
+                    {{-- CRITICAL: Pass Return Trip details so we can Redirect to Step 2 --}}
+                    <input type="hidden" name="trip_type" value="roundtrip">
 
-                    {{-- Also pass original search params just in case --}}
-                    <input type="hidden" name="original_date" value="{{ request('date') }}">
-                    <input type="hidden" name="original_origin" value="{{ request('origin') }}">
-                    <input type="hidden" name="original_destination" value="{{ request('destination') }}">
+                    {{-- Use request()->input to prevent errors if keys are missing --}}
+                    <input type="hidden" name="return_date" value="{{ request()->input('return_date') }}">
+                    <input type="hidden" name="return_origin" value="{{ request()->input('return_origin') }}">
+                    <input type="hidden" name="return_destination" value="{{ request()->input('return_destination') }}">
+
+                    {{-- Pass original search params to maintain context --}}
+                    <input type="hidden" name="original_date" value="{{ request()->input('date') }}">
+                    <input type="hidden" name="original_origin" value="{{ request()->input('origin') }}">
+                    <input type="hidden" name="original_destination" value="{{ request()->input('destination') }}">
                     @endif
 
                     <div class="mb-3">

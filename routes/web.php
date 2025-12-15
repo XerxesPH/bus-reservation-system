@@ -47,6 +47,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::post('/bookings/{id}/cancel', [AdminController::class, 'cancelBooking'])->name('admin.cancel_booking');
     Route::get('/admin/buses/{id}/edit', [AdminController::class, 'editBus'])->name('admin.buses.edit');
     Route::put('/admin/buses/{id}', [AdminController::class, 'updateBus'])->name('admin.buses.update');
+    Route::delete('/admin/buses/{id}', [AdminController::class, 'deleteBus'])->name('admin.buses.delete');
 });
 
 Route::middleware(['auth'])->group(function () {
