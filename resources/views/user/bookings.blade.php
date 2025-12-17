@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mt-5">
+<div class="container py-5">
     <h2 class="mb-4">My Bookings</h2>
 
     @if($bookings->isEmpty())

@@ -12,10 +12,10 @@
 $isOutbound = ($leg == 'outbound');
 
 // Dynamic Form Action
-$formAction = $isOutbound ? route('trips.store_outbound') : route('trips.book');
+$formAction = $isOutbound ? route('trips.store_outbound') : route('checkout.prepare');
 
 // Dynamic Button Text
-$btnText = $isOutbound ? 'CONFIRM & SELECT RETURN TRIP' : 'PROCEED TO PAYMENT';
+$btnText = $isOutbound ? 'CONFIRM & SELECT RETURN TRIP' : 'PROCEED TO CHECKOUT';
 $btnColor = $isOutbound ? 'btn-dark' : 'btn-success';
 @endphp
 
@@ -130,12 +130,14 @@ $btnColor = $isOutbound ? 'btn-dark' : 'btn-success';
                     <input type="hidden" name="adults" value="{{ $adults }}">
                     <input type="hidden" name="children" value="{{ $children }}">
 
+                    {{-- CRITICAL: Pass Trip Type (oneway/roundtrip) to enforce correct booking logic --}}
+                    <input type="hidden" name="trip_type" value="{{ $searchParams['trip_type'] }}">
+
                     {{-- Seat Data --}}
                     <input type="hidden" name="selected_seats" id="input-seats" required>
 
                     @if($isOutbound)
                     {{-- CRITICAL: Pass Return Trip details so we can Redirect to Step 2 --}}
-                    <input type="hidden" name="trip_type" value="roundtrip">
 
                     {{-- Use request()->input to prevent errors if keys are missing --}}
                     <input type="hidden" name="return_date" value="{{ request()->input('return_date') }}">
@@ -147,15 +149,6 @@ $btnColor = $isOutbound ? 'btn-dark' : 'btn-success';
                     <input type="hidden" name="original_origin" value="{{ request()->input('origin') }}">
                     <input type="hidden" name="original_destination" value="{{ request()->input('destination') }}">
                     @endif
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">Passenger Name</label>
-                        <input type="text" name="guest_name" class="form-control" required value="{{ Auth::check() ? Auth::user()->name : '' }}" placeholder="Full Name">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">Contact Email</label>
-                        <input type="email" name="guest_email" class="form-control" required value="{{ Auth::check() ? Auth::user()->email : '' }}" placeholder="name@example.com">
-                    </div>
 
                     <button type="submit" class="btn {{ $btnColor }} w-100 py-3 fw-bold shadow-sm" id="checkout-btn" disabled>
                         {{ $btnText }}

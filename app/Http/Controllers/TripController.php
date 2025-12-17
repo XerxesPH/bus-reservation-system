@@ -8,25 +8,68 @@ use App\Models\Terminal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 class TripController extends Controller
 {
     public function search(Request $request)
     {
-        // === STEP CHECKER ===
-        // If "step" is 2, we are looking for the return trip.
-        // If "step" is missing or 1, we are looking for the outbound trip.
         $step = $request->query('step', 1);
+
+        // === VALIDATION: Check for Return Trip Availability (Round Trip Only) ===
+        // This ensures we don't let the user select an outbound bus if they can't return.
+        if ($request->input('trip_type') === 'roundtrip' && $step == 1) {
+            $requiredSeats = $request->input('adults') + $request->input('children');
+
+            // 1. Check Return Schedule Availability (Seats)
+            $returnSchedules = Schedule::where('origin_id', $request->input('return_origin'))
+                ->where('destination_id', $request->input('return_destination'))
+                ->whereDate('departure_date', $request->input('return_date'))
+                ->where('status', 'scheduled')
+                ->when($request->input('return_date') == \Carbon\Carbon::today()->toDateString(), function ($query) {
+                    $query->whereTime('departure_time', '>', \Carbon\Carbon::now()->format('H:i:s'));
+                })
+                ->get();
+
+            $hasAvailableReturn = $returnSchedules->contains(function ($schedule) use ($requiredSeats) {
+                return $schedule->seats_left >= $requiredSeats;
+            });
+
+            if ($returnSchedules->isEmpty()) {
+                return redirect()->route('home')->with('error', 'No return buses found for your selected return date. Please choose another date.');
+            }
+
+            if (! $hasAvailableReturn) {
+                return redirect()->route('home')->with('error', 'All return buses are fully booked for your selected date. Please choose another date.');
+            }
+
+            // 2. Check Outbound Schedule Availability (Seats)
+            $outboundSchedules = Schedule::where('origin_id', $request->input('origin'))
+                ->where('destination_id', $request->input('destination'))
+                ->whereDate('departure_date', $request->input('date'))
+                ->where('status', 'scheduled')
+                ->when($request->input('date') == \Carbon\Carbon::today()->toDateString(), function ($query) {
+                    $query->whereTime('departure_time', '>', \Carbon\Carbon::now()->format('H:i:s'));
+                })
+                ->get();
+
+            $hasAvailableOutbound = $outboundSchedules->contains(function ($schedule) use ($requiredSeats) {
+                return $schedule->seats_left >= $requiredSeats;
+            });
+
+            if ($outboundSchedules->isEmpty()) {
+                return redirect()->route('home')->with('error', 'No outbound buses found for your selected date. Please choose another date.');
+            }
+
+            if (! $hasAvailableOutbound) {
+                return redirect()->route('home')->with('error', 'All outbound buses are fully booked for your selected date. Please choose another date.');
+            }
+        }
 
         $originId = $request->input('origin');
         $destinationId = $request->input('destination');
         $date = $request->input('date');
 
-        // Logic for Return Trip Search (Step 2)
         if ($step == 2) {
-            // If we are in Step 2, the "Origin" is actually the destination of the first leg
-            // unless the user specified a custom return route.
             $searchOrigin = $request->input('return_origin') ?? $destinationId;
             $searchDest = $request->input('return_destination') ?? $originId;
             $searchDate = $request->input('return_date');
@@ -34,7 +77,10 @@ class TripController extends Controller
             $headerTitle = "Select Return Trip";
             $stepLabel = "2";
         } else {
-            // Step 1: Normal Outbound
+            // STEP 1: New Search
+            // CRITICAL FIX: Clear any previous partial bookings (e.g., from an abandoned round trip)
+            session()->forget('outbound_selection');
+
             $searchOrigin = $originId;
             $searchDest = $destinationId;
             $searchDate = $date;
@@ -43,10 +89,14 @@ class TripController extends Controller
             $stepLabel = "1";
         }
 
-        // Query the Trips
+        // Use whereDate for robust date comparison
         $trips = Schedule::where('origin_id', $searchOrigin)
             ->where('destination_id', $searchDest)
-            ->where('departure_date', $searchDate)
+            ->whereDate('departure_date', $searchDate)
+            ->where('status', 'scheduled') // Only show active schedules
+            ->when($searchDate == \Carbon\Carbon::today()->toDateString(), function ($query) {
+                $query->whereTime('departure_time', '>', \Carbon\Carbon::now()->format('H:i:s'));
+            })
             ->with(['bus', 'origin', 'destination'])
             ->get();
 
@@ -68,46 +118,89 @@ class TripController extends Controller
         $scheduleId = $request->query('schedule_id');
         $trip = Schedule::with('bus', 'origin', 'destination')->findOrFail($scheduleId);
 
-        // 1. Get the 'leg' (outbound or return)
-        $leg = $request->query('leg', 'outbound');
+        // === CRITICAL FIX START ===
+        // We override the 'leg' parameter based on the Trip Type and Step.
+        // This prevents the system from accidentally booking a One Way ticket
+        // when the user intends to book a Round Trip.
 
-        // 2. FIX: Retrieve Passenger Counts from URL
-        // The view needs these to calculate prices and limit seat selection
+        $tripType = $request->query('trip_type', 'oneway');
+        $step = (int) $request->query('step', 1); // Default to Step 1
+
+        if ($tripType == 'roundtrip') {
+            if ($step == 1) {
+                // If it's Round Trip Step 1, it MUST be outbound
+                $leg = 'outbound';
+            } else {
+                // If it's Round Trip Step 2 (or higher), it's return
+                $leg = 'return';
+            }
+        } else {
+            // Default logic for One Way
+            $leg = 'oneway';
+        }
+        // === CRITICAL FIX END ===
+
         $adults = (int) $request->query('adults', 1);
         $children = (int) $request->query('children', 0);
 
-        // 3. Get Occupied Seats
-        $occupiedSeats = Booking::where('schedule_id', $scheduleId)
-            ->where('status', 'confirmed')
-            ->get()
-            ->pluck('seat_numbers')
-            ->flatten()
-            ->toArray();
+        // Bundle search params to pass to view (prevents data loss)
+        $searchParams = [
+            'trip_type' => $tripType,
+            'return_date' => $request->query('return_date'),
+            'return_origin' => $request->query('return_origin'),
+            'return_destination' => $request->query('return_destination'),
+            'origin' => $request->query('origin'),
+            'destination' => $request->query('destination'),
+            'date' => $request->query('date'),
+            'adults' => $adults,
+            'children' => $children,
+        ];
 
-        $outboundBookings = Booking::where('schedule_id', $scheduleId)
-            ->where('status', 'confirmed')
-            ->pluck('seat_numbers')
-            ->flatten();
+        // Get Occupied Seats
+        $occupiedSeats = Booking::where('schedule_id', $scheduleId)->where('status', 'confirmed')->pluck('seat_numbers')->flatten();
+        $returnBookings = Booking::where('return_schedule_id', $scheduleId)->where('status', 'confirmed')->pluck('return_seat_numbers')->flatten();
+        $occupiedSeats = $occupiedSeats->merge($returnBookings)->unique()->toArray();
 
-        $returnBookings = Booking::where('return_schedule_id', $scheduleId)
-            ->where('status', 'confirmed')
-            ->pluck('return_seat_numbers') // Note: Fetching from return_seat_numbers column
-            ->flatten();
-
-        $occupiedSeats = $outboundBookings->merge($returnBookings)->unique()->toArray();
-        // 4. Pass $adults and $children to the view
-        return view('trips.seats', compact('trip', 'occupiedSeats', 'leg', 'adults', 'children'));
+        return view('trips.seats', compact('trip', 'occupiedSeats', 'leg', 'adults', 'children', 'searchParams'));
     }
 
-    // === NEW FUNCTION: Stores the first choice in Session ===
     public function storeOutbound(Request $request)
     {
         // 1. Validate
         $request->validate([
             'schedule_id' => 'required',
-            'selected_seats' => 'required', // JSON
-            'return_date' => 'required', // Needed for next step
+            'selected_seats' => 'required',
+            'return_date' => 'required',
         ]);
+
+        // === DOUBLE CHECK VALIDATION: Verify Return Trip Availability ===
+        // This prevents the user from landing on Step 2 (Result URL) if the return leg is invalid.
+        if ($request->input('trip_type') === 'roundtrip') {
+            $request->validate([
+                'return_origin' => 'required',
+                'return_destination' => 'required',
+            ]);
+
+            $requiredSeats = $request->input('adults') + $request->input('children');
+
+            $returnSchedules = Schedule::where('origin_id', $request->input('return_origin'))
+                ->where('destination_id', $request->input('return_destination'))
+                ->whereDate('departure_date', $request->input('return_date'))
+                ->where('status', 'scheduled')
+                ->get();
+
+            $hasAvailableReturn = $returnSchedules->contains(function ($schedule) use ($requiredSeats) {
+                return $schedule->seats_left >= $requiredSeats;
+            });
+
+            if ($returnSchedules->isEmpty()) {
+                return redirect()->route('home')->with('error', 'The selected return trip is no longer available. Please search again.');
+            }
+
+            if (! $hasAvailableReturn) {
+                return redirect()->route('home')->with('error', 'All return buses are fully booked. Please search again.');
+            }
+        }
 
         $seats = json_decode($request->selected_seats, true);
 
@@ -117,27 +210,25 @@ class TripController extends Controller
             'seats' => $seats,
             'adults' => $request->adults,
             'children' => $request->children,
-            'guest_name' => $request->guest_name,
-            'guest_email' => $request->guest_email,
         ]);
 
         // 3. Redirect to Search (Step 2)
-        // We pass the parameters needed for the Return Search
         return redirect()->route('trips.search', [
             'step' => 2,
-            'date' => $request->input('original_date'), // keep original date for reference
-            'origin' => $request->input('original_origin'), // keep original origin
-            'destination' => $request->input('original_destination'), // keep original dest
-            'return_date' => $request->return_date,
+            'trip_type' => 'roundtrip', // Ensure we stay in Round Trip mode
+            'date' => $request->return_date, // Search for the Return Date (Primary Date for Step 2)
+            'return_date' => $request->return_date, // Explicitly pass return_date for validation logic
             'return_origin' => $request->return_origin,
             'return_destination' => $request->return_destination,
-            'trip_type' => 'roundtrip',
+            // Keep original params for context
+            'origin' => $request->original_origin,
+            'destination' => $request->original_destination,
+            'original_date' => $request->original_date,
             'adults' => $request->adults,
             'children' => $request->children,
         ]);
     }
 
-    // === FINAL FUNCTION: Books the ticket (Single or Merged) ===
     public function bookTicket(Request $request)
     {
         $request->validate([
@@ -146,61 +237,47 @@ class TripController extends Controller
         ]);
 
         $booking = DB::transaction(function () use ($request) {
+            // FIX: Check intent explicitly.
+            // Only proceed with Round Trip logic if the Session exists AND the User intentionally requested a Round Trip.
+            $isRoundTripSession = session()->has('outbound_selection');
+            $isRoundTripIntent = $request->input('trip_type') === 'roundtrip';
 
-            // Check if there is a PREVIOUS trip in Session (this makes it a Round Trip)
-            if (session()->has('outbound_selection')) {
-                // --- ROUND TRIP LOGIC ---
-
-                // 1. Get Outbound data from Session
+            if ($isRoundTripSession && $isRoundTripIntent) {
+                // ROUND TRIP BOOKING
                 $outboundData = session()->get('outbound_selection');
                 $outboundTrip = Schedule::find($outboundData['schedule_id']);
-                $outboundSeats = $outboundData['seats'];
-                $outboundPrice = ($outboundTrip->price * $outboundData['adults']) +
-                    (($outboundTrip->price * 0.8) * $outboundData['children']);
+                $outboundPrice = ($outboundTrip->price * $outboundData['adults']) + (($outboundTrip->price * 0.8) * $outboundData['children']);
 
-                // 2. Get Return data from current Request
                 $returnTrip = Schedule::find($request->schedule_id);
                 $returnSeats = json_decode($request->selected_seats, true);
-                $returnPrice = ($returnTrip->price * $request->adults) +
-                    (($returnTrip->price * 0.8) * $request->children);
+                $returnPrice = ($returnTrip->price * $request->adults) + (($returnTrip->price * 0.8) * $request->children);
 
-                // 3. Create a SINGLE booking record
                 $newBooking = Booking::create([
-                    // Outbound details
                     'schedule_id' => $outboundTrip->id,
-                    'seat_numbers' => $outboundSeats,
-
-                    // Return details
+                    'seat_numbers' => $outboundData['seats'],
                     'return_schedule_id' => $returnTrip->id,
                     'return_seat_numbers' => $returnSeats,
-
-                    // Passenger & pricing details
                     'user_id' => Auth::id(),
-                    'guest_name' => $outboundData['guest_name'], // Use guest name from first leg
+                    'guest_name' => $outboundData['guest_name'],
                     'guest_email' => $outboundData['guest_email'],
                     'adults' => $outboundData['adults'],
                     'children' => $outboundData['children'],
-                    'total_price' => $outboundPrice + $returnPrice, // Combined price
+                    'total_price' => $outboundPrice + $returnPrice,
                     'status' => 'confirmed',
                 ]);
 
-                // 4. Clear Session
                 session()->forget('outbound_selection');
-
                 return $newBooking;
             } else {
-                // --- ONE-WAY TRIP LOGIC ---
-
-                // 1. Get trip data from current Request
+                // ONE WAY BOOKING
+                // If this runs, we ignore any 'outbound_selection' in the session because the user wanted a One Way trip.
                 $trip = Schedule::find($request->schedule_id);
                 $seats = json_decode($request->selected_seats, true);
-                $adults = $request->adults;
-                $children = $request->children;
+                $totalPrice = ($trip->price * $request->adults) + (($trip->price * 0.8) * $request->children);
 
-                // 2. Calculate Price
-                $totalPrice = ($trip->price * $adults) + (($trip->price * 0.8) * $children);
+                // Explicitly clear any stale session data just to be clean
+                session()->forget('outbound_selection');
 
-                // 3. Create the booking
                 return Booking::create([
                     'schedule_id' => $trip->id,
                     'user_id' => Auth::id(),
@@ -209,8 +286,8 @@ class TripController extends Controller
                     'seat_numbers' => $seats,
                     'total_price' => $totalPrice,
                     'status' => 'confirmed',
-                    'adults' => $adults,
-                    'children' => $children,
+                    'adults' => $request->adults,
+                    'children' => $request->children,
                 ]);
             }
         });
@@ -220,17 +297,7 @@ class TripController extends Controller
 
     public function showSuccess(Booking $booking)
     {
-        // Eager load all the relationships needed for the ticket view
-        $booking->load([
-            'user',
-            'schedule.bus',
-            'schedule.origin',
-            'schedule.destination',
-            'returnSchedule.bus',
-            'returnSchedule.origin',
-            'returnSchedule.destination'
-        ]);
-
+        $booking->load(['user', 'schedule.bus', 'schedule.origin', 'schedule.destination', 'returnSchedule.bus', 'returnSchedule.origin', 'returnSchedule.destination']);
         return view('bookings.success', compact('booking'));
     }
 }

@@ -9,7 +9,6 @@
             {{-- We use $headerTitle passed from the Controller (e.g., "Select Outbound" or "Select Return") --}}
             <h2 class="fw-bold text-dark">{{ $headerTitle ?? 'Select Trip' }}</h2>
             <p class="text-muted mb-0">
-                {{-- FIX: Use $trips instead of $outboundTrips --}}
                 Found {{ $trips->count() }} results for {{ $origin->city }} to {{ $destination->city }}
             </p>
         </div>

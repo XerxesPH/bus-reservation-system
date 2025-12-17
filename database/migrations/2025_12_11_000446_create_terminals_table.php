@@ -12,6 +12,13 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('city');
+            $table->string('province');
+            $table->string('type'); // e.g., 'integrated_terminal', 'private_terminal'
+
+            // ADD THESE TWO LINES FOR THE MAP:
+            $table->decimal('latitude', 10, 7)->nullable();
+            $table->decimal('longitude', 10, 7)->nullable();
+
             $table->timestamps();
         });
     }

@@ -16,6 +16,7 @@ class Schedule extends Model
         'departure_date',
         'departure_time',
         'price',
+        'status',
     ];
 
     // IMPORTANT: This tells Laravel to always calculate 'seats_left'

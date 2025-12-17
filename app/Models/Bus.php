@@ -14,6 +14,8 @@ class Bus extends Model
         'code',      // e.g., BUS-101
         'type',      // e.g., Deluxe
         'capacity',   // e.g., 20
+        'driver_name',
+        'driver_image',
     ];
 
     // 2. Define Relationship: A bus has many trips (schedules)

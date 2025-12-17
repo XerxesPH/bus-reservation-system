@@ -1,10 +1,10 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('content')
-<div class="container mt-4">
+<div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Manage Bookings</h2>
-        <a href="{{ route('admin.dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+        <h2 class="fw-bold text-dark">Manage Bookings</h2>
+        {{-- Back button not strictly needed with sidebar, but can keep or remove. Removing since sidebar exists. --}}
     </div>
 
     @if(session('success'))
