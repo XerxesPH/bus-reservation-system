@@ -45,27 +45,6 @@
             /* Orange hover effect */
         }
 
-        /* Search Bar Styling */
-        .custom-search {
-            background-color: #FFF8E7;
-            /* Light cream background */
-            border: 1px solid #333;
-            border-radius: 4px;
-            padding: 5px 10px;
-            width: 300px;
-            display: flex;
-            align-items: center;
-        }
-
-        .custom-search input {
-            background: transparent;
-            border: none;
-            outline: none;
-            width: 100%;
-            font-size: 0.9rem;
-            font-family: 'Poppins', sans-serif;
-        }
-
         /* User Icon Styling */
         .user-icon-btn {
             font-size: 2rem;
@@ -111,27 +90,17 @@
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.buses') }}">Buses</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.bookings') }}">Bookings</a></li>
                     @else
-                    <li class="nav-item"><a class="nav-link" href="{{ url('/') }}">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">Booking</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">Schedule</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">Seat Reservation</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('user.bookings') }}">Ticket</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url('/') }}">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('user.bookings') }}">Booking</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('pages.schedule') }}">Schedule</a></li>
                     @endif
                     @else
-                    <li class="nav-item"><a class="nav-link" href="#">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">Booking</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">Schedule</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url('/') }}">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('guest.bookings.search') }}">Booking</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('pages.schedule') }}">Schedule</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('login') }}">Log In</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('register') }}">Sign Up</a></li>
                     @endauth
-
-                    {{-- SEARCH BAR --}}
-                    <li class="nav-item ms-lg-4">
-                        <div class="custom-search">
-                            <input type="text" placeholder="Search Your Destination Now">
-                            <i class="bi bi-search"></i>
-                        </div>
-                    </li>
                 </ul>
             </div>
 
@@ -148,7 +117,6 @@
                             <hr class="dropdown-divider">
                         </li>
                         <li><a class="dropdown-item" href="{{ route('profile.index') }}">My Account</a></li>
-                        <li><a class="dropdown-item" href="{{ route('user.bookings') }}">My Tickets</a></li>
                         <li>
                             <form action="{{ route('logout') }}" method="POST">
                                 @csrf
@@ -168,7 +136,7 @@
     </nav>
 
     {{-- MAIN CONTENT --}}
-    <main>
+    <main style="padding-top: 100px;">
         @yield('content')
     </main>
 

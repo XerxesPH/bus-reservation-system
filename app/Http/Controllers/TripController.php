@@ -25,6 +25,9 @@ class TripController extends Controller
                 ->where('destination_id', $request->input('return_destination'))
                 ->whereDate('departure_date', $request->input('return_date'))
                 ->where('status', 'scheduled')
+                ->when($request->input('return_date') == \Carbon\Carbon::today()->toDateString(), function ($query) {
+                    $query->whereTime('departure_time', '>', \Carbon\Carbon::now()->format('H:i:s'));
+                })
                 ->get();
 
             $hasAvailableReturn = $returnSchedules->contains(function ($schedule) use ($requiredSeats) {
@@ -44,6 +47,9 @@ class TripController extends Controller
                 ->where('destination_id', $request->input('destination'))
                 ->whereDate('departure_date', $request->input('date'))
                 ->where('status', 'scheduled')
+                ->when($request->input('date') == \Carbon\Carbon::today()->toDateString(), function ($query) {
+                    $query->whereTime('departure_time', '>', \Carbon\Carbon::now()->format('H:i:s'));
+                })
                 ->get();
 
             $hasAvailableOutbound = $outboundSchedules->contains(function ($schedule) use ($requiredSeats) {
@@ -88,6 +94,9 @@ class TripController extends Controller
             ->where('destination_id', $searchDest)
             ->whereDate('departure_date', $searchDate)
             ->where('status', 'scheduled') // Only show active schedules
+            ->when($searchDate == \Carbon\Carbon::today()->toDateString(), function ($query) {
+                $query->whereTime('departure_time', '>', \Carbon\Carbon::now()->format('H:i:s'));
+            })
             ->with(['bus', 'origin', 'destination'])
             ->get();
 
@@ -201,8 +210,6 @@ class TripController extends Controller
             'seats' => $seats,
             'adults' => $request->adults,
             'children' => $request->children,
-            'guest_name' => $request->guest_name,
-            'guest_email' => $request->guest_email,
         ]);
 
         // 3. Redirect to Search (Step 2)

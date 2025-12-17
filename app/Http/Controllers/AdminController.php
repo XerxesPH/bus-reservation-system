@@ -153,6 +153,33 @@ class AdminController extends Controller
         return view('admin.buses', compact('buses'));
     }
 
+    public function createBus()
+    {
+        return view('admin.buses.create');
+    }
+
+    public function storeBus(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string|unique:buses,code',
+            'type' => 'required|in:deluxe,regular',
+            'capacity' => 'required|integer|min:10|max:60',
+            'driver_name' => 'required|string',
+            'driver_image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        $data = $request->all();
+
+        if ($request->hasFile('driver_image')) {
+            $path = $request->file('driver_image')->store('drivers', 'public');
+            $data['driver_image'] = $path;
+        }
+
+        Bus::create($data);
+
+        return redirect()->route('admin.buses')->with('success', 'Bus added successfully!');
+    }
+
     // --- BOOKING MANAGER ---
 
     public function bookings()

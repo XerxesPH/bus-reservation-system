@@ -1,12 +1,13 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('content')
-<div class="container py-5">
+<div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold">Manage Schedules</h2>
+        <h2 class="fw-bold text-dark">Manage Schedules</h2>
         <div>
-            <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-secondary me-2">Back to Dashboard</a>
-            <a href="{{ route('admin.create_schedule') }}" class="btn btn-success"><i class="fa-solid fa-plus me-2"></i> Generate New Schedules</a>
+            <a href="{{ route('admin.create_schedule') }}" class="btn btn-success fw-bold shadow-sm">
+                <i class="fa-solid fa-plus me-2"></i> Generate New Schedules
+            </a>
         </div>
     </div>
 

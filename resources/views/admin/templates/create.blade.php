@@ -1,12 +1,19 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('content')
-<div class="container mt-5">
-    <div class="card shadow-lg mx-auto" style="max-width: 700px;">
-        <div class="card-header bg-primary text-white">
-            <h4>Create Automated Route Plan</h4>
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-dark">Create Automated Route Plan</h2>
+        <a href="{{ route('admin.templates') }}" class="btn btn-outline-secondary">
+            <i class="fa-solid fa-arrow-left me-2"></i> Back to Plans
+        </a>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-4 mx-auto" style="max-width: 800px;">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-bold">Route Template Details</h5>
         </div>
-        <div class="card-body">
+        <div class="card-body p-4">
             <p class="text-muted small mb-4">
                 <i class="fa-solid fa-circle-info me-1"></i>
                 Define a recurring schedule below. The system will check this plan daily and automatically create trips for the upcoming days.

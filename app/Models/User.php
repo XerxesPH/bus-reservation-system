@@ -23,6 +23,9 @@ class User extends Authenticatable
         'password',
         'role',
         'contact_number',
+        'avatar', // Added
+        'age',    // Added
+        'gender', // Added
     ];
 
     public function paymentMethods()

@@ -24,9 +24,6 @@
                         <a href="#payments" class="list-group-item list-group-item-action py-3 px-4" data-bs-toggle="list">
                             <i class="fa-solid fa-credit-card me-2"></i> Payment Methods
                         </a>
-                        <a href="#tickets" class="list-group-item list-group-item-action py-3 px-4" data-bs-toggle="list">
-                            <i class="fa-solid fa-ticket me-2"></i> My Tickets
-                        </a>
                     </div>
                 </div>
             </div>
@@ -68,21 +65,57 @@
                             <h5 class="mb-0 fw-bold">Personal Information</h5>
                         </div>
                         <div class="card-body p-4">
-                            <form action="{{ route('profile.update') }}" method="POST">
+                            <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data">
                                 @csrf
                                 @method('PUT')
-                                <div class="mb-3">
-                                    <label class="form-label text-muted small fw-bold">Full Name</label>
-                                    <input type="text" name="name" class="form-control" value="{{ old('name', $user->name) }}" required>
+
+                                {{-- Avatar Upload --}}
+                                <div class="mb-4 text-center">
+                                    <div class="mb-3">
+                                        @if($user->avatar)
+                                        <img src="{{ asset('storage/' . $user->avatar) }}" alt="Profile Avatar" class="rounded-circle shadow-sm" style="width: 120px; height: 120px; object-fit: cover;">
+                                        @else
+                                        <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm text-secondary" style="width: 120px; height: 120px; font-size: 3rem;">
+                                            <i class="fa-solid fa-user"></i>
+                                        </div>
+                                        @endif
+                                    </div>
+                                    <div class="d-inline-block">
+                                        <label class="btn btn-sm btn-outline-primary" for="avatarInput">
+                                            <i class="fa-solid fa-camera me-1"></i> Change Photo
+                                        </label>
+                                        <input type="file" name="avatar" class="d-none" id="avatarInput" accept="image/*">
+                                    </div>
                                 </div>
-                                <div class="mb-3">
-                                    <label class="form-label text-muted small fw-bold">Email Address</label>
-                                    <input type="email" name="email" class="form-control" value="{{ old('email', $user->email) }}" required>
+
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label text-muted small fw-bold">Full Name</label>
+                                        <input type="text" name="name" class="form-control" value="{{ old('name', $user->name) }}" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label text-muted small fw-bold">Email Address</label>
+                                        <input type="email" name="email" class="form-control" value="{{ old('email', $user->email) }}" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label text-muted small fw-bold">Contact Number</label>
+                                        <input type="text" name="contact_number" class="form-control" value="{{ old('contact_number', $user->contact_number) }}" placeholder="+63 9XX XXX XXXX">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label text-muted small fw-bold">Age</label>
+                                        <input type="number" name="age" class="form-control" value="{{ old('age', $user->age) }}" min="1">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label text-muted small fw-bold">Gender</label>
+                                        <select name="gender" class="form-select">
+                                            <option value="">Select</option>
+                                            <option value="Male" {{ old('gender', $user->gender) == 'Male' ? 'selected' : '' }}>Male</option>
+                                            <option value="Female" {{ old('gender', $user->gender) == 'Female' ? 'selected' : '' }}>Female</option>
+                                            <option value="Other" {{ old('gender', $user->gender) == 'Other' ? 'selected' : '' }}>Other</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="mb-3">
-                                    <label class="form-label text-muted small fw-bold">Contact Number</label>
-                                    <input type="text" name="contact_number" class="form-control" value="{{ old('contact_number', $user->contact_number) }}" placeholder="+63 9XX XXX XXXX">
-                                </div>
+
                                 <div class="text-end mt-4">
                                     <button type="submit" class="btn btn-primary px-4 fw-bold">Save Changes</button>
                                 </div>
@@ -164,85 +197,6 @@
                                 @endforeach
                             </div>
                             @endif
-                        </div>
-                    </div>
-                </div>
-
-                {{-- 4. My Tickets --}}
-                <div class="tab-pane fade" id="tickets">
-                    <div class="card border-0 shadow-sm rounded-4">
-                        <div class="card-header bg-white py-3">
-                            <h5 class="mb-0 fw-bold">Booking History</h5>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0 align-middle">
-                                <thead class="bg-light">
-                                    <tr>
-                                        <th class="ps-4">Trip Details</th>
-                                        <th>Date & Time</th>
-                                        <th>Seats</th>
-                                        <th>Total</th>
-                                        <th>Status</th>
-                                        <th class="text-end pe-4">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($bookings as $booking)
-                                    <tr>
-                                        <td class="ps-4">
-                                            <div class="fw-bold">{{ $booking->schedule->origin->city }} <i class="fa-solid fa-arrow-right mx-1 text-muted small"></i> {{ $booking->schedule->destination->city }}</div>
-                                            <div class="small text-muted">{{ $booking->schedule->bus->bus_number }} ({{ $booking->schedule->bus->type }})</div>
-                                        </td>
-                                        <td>
-                                            <div>{{ \Carbon\Carbon::parse($booking->schedule->departure_date)->format('M d, Y') }}</div>
-                                            <div class="small text-muted">{{ \Carbon\Carbon::parse($booking->schedule->departure_time)->format('h:i A') }}</div>
-                                        </td>
-                                        <td>
-                                            <div class="text-truncate" style="max-width: 100px;" title="{{ is_array($booking->seat_numbers) ? implode(', ', $booking->seat_numbers) : $booking->seat_numbers }}">
-                                                {{ is_array($booking->seat_numbers) ? implode(', ', $booking->seat_numbers) : $booking->seat_numbers }}
-                                            </div>
-                                        </td>
-                                        <td class="fw-bold">₱{{ number_format($booking->total_price, 2) }}</td>
-                                        <td>
-                                            @if($booking->status == 'confirmed')
-                                            <span class="badge bg-success bg-opacity-10 text-success">Confirmed</span>
-                                            @elseif($booking->status == 'cancelled')
-                                            <span class="badge bg-danger bg-opacity-10 text-danger">Cancelled</span>
-                                            @else
-                                            <span class="badge bg-secondary">{{ $booking->status }}</span>
-                                            @endif
-                                        </td>
-                                        <td class="text-end pe-4">
-                                            @if($booking->status == 'confirmed')
-                                            @php
-                                            $deptTime = \Carbon\Carbon::parse($booking->schedule->departure_date . ' ' . $booking->schedule->departure_time);
-                                            @endphp
-                                            @if($deptTime->isFuture())
-                                            <form action="{{ route('profile.bookings.cancel', $booking->id) }}" method="POST" class="d-inline">
-                                                @csrf
-                                                @method('POST') {{-- Using POST for cancellation action --}}
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to cancel this ticket?')">
-                                                    Cancel
-                                                </button>
-                                            </form>
-                                            @else
-                                            <span class="text-muted small">Completed</span>
-                                            @endif
-                                            @else
-                                            <span class="text-muted small">-</span>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                    @empty
-                                    <tr>
-                                        <td colspan="6" class="text-center py-5 text-muted">
-                                            <i class="fa-solid fa-ticket fa-2x mb-3 opacity-25"></i>
-                                            <p>No booking history found.</p>
-                                        </td>
-                                    </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
                         </div>
                     </div>
                 </div>

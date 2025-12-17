@@ -1,15 +1,14 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('content')
-<div class="container py-5">
+<div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="fw-bold">Route Plans (Automation)</h2>
+            <h2 class="fw-bold text-dark">Route Plans (Automation)</h2>
             <p class="text-muted mb-0">These "Templates" allow the system to automatically generate schedules every day.</p>
         </div>
         <div>
-            <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-secondary me-2">Back</a>
-            <a href="{{ route('admin.templates.create') }}" class="btn btn-primary"><i class="fa-solid fa-plus me-2"></i> Create New Plan</a>
+            <a href="{{ route('admin.templates.create') }}" class="btn btn-primary fw-bold shadow-sm"><i class="fa-solid fa-plus me-2"></i> Create New Plan</a>
         </div>
     </div>
 

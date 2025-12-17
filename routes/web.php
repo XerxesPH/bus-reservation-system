@@ -13,6 +13,9 @@ Route::get('/', function () {
     return view('welcome', compact('terminals'));
 })->name('home');
 
+// NEW: Public Pages
+Route::get('/schedule', [App\Http\Controllers\PageController::class, 'schedule'])->name('pages.schedule');
+
 // --- TRIP & BOOKING ROUTES ---
 
 // 1. Search Results (Step 1 or Step 2)
@@ -24,10 +27,22 @@ Route::get('/seat-selection', [TripController::class, 'selectSeats'])->name('tri
 // 3. INTERMEDIATE STEP: Store Outbound Selection (For Round Trips)
 Route::post('/book/outbound', [TripController::class, 'storeOutbound'])->name('trips.store_outbound');
 
-// 4. FINAL STEP: Finalize Booking (For One Way or Return Leg)
-Route::post('/book/finalize', [TripController::class, 'bookTicket'])->name('trips.book');
+// 4. CHECKOUT FLOW
+// Step A: Prepare Checkout (Store seats in session & Redirect to Checkout Page)
+Route::post('/checkout/prepare', [App\Http\Controllers\CheckoutController::class, 'prepare'])->name('checkout.prepare');
 
-// 5. Success Page
+// Step B: Show Checkout Page (Payment & Contact Info)
+Route::get('/checkout', [App\Http\Controllers\CheckoutController::class, 'index'])->name('checkout.index');
+
+// Step C: Process Payment & Create Booking
+Route::post('/checkout/process', [App\Http\Controllers\CheckoutController::class, 'store'])->name('checkout.store');
+
+// 6. GUEST BOOKING MANAGEMENT
+Route::get('/manage-booking', [App\Http\Controllers\GuestBookingController::class, 'search'])->name('guest.bookings.search');
+Route::post('/manage-booking/search', [App\Http\Controllers\GuestBookingController::class, 'show'])->name('guest.bookings.show');
+Route::post('/manage-booking/cancel/{id}', [App\Http\Controllers\GuestBookingController::class, 'cancel'])->name('guest.bookings.cancel');
+
+// 7. Success Page
 Route::get('/booking-success/{booking}', [TripController::class, 'showSuccess'])->name('booking.success');
 
 
@@ -57,6 +72,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
 
     // NEW: Bus/Fleet Management
     Route::get('/buses', [AdminController::class, 'buses'])->name('admin.buses');
+    Route::get('/buses/create', [AdminController::class, 'createBus'])->name('admin.buses.create');
+    Route::post('/buses', [AdminController::class, 'storeBus'])->name('admin.buses.store');
     Route::get('/buses/{id}/edit', [AdminController::class, 'editBus'])->name('admin.buses.edit');
     Route::put('/buses/{id}', [AdminController::class, 'updateBus'])->name('admin.buses.update');
     Route::delete('/buses/{id}', [AdminController::class, 'deleteBus'])->name('admin.buses.delete');
@@ -68,7 +85,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
 Route::middleware(['auth'])->group(function () {
     // Deprecated standalone route, redirecting to new dashboard or keeping as alias? 
     // Let's point 'My Bookings' to the new dashboard for consistency.
-    Route::get('/my-bookings', [App\Http\Controllers\ProfileController::class, 'index'])->name('user.bookings');
+    Route::get('/my-bookings', [App\Http\Controllers\ProfileController::class, 'bookings'])->name('user.bookings');
 
     // Profile Dashboard
     Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'index'])->name('profile.index');

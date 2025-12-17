@@ -19,14 +19,23 @@ class ProfileController extends Controller
     public function index()
     {
         $user = Auth::user();
+        $paymentMethods = PaymentMethod::where('user_id', $user->id)->get();
+
+        return view('profile.index', compact('user', 'paymentMethods'));
+    }
+
+    /**
+     * Display the user's booking history.
+     */
+    public function bookings()
+    {
+        $user = Auth::user();
         $bookings = Booking::where('user_id', $user->id)
             ->with(['schedule.origin', 'schedule.destination', 'schedule.bus'])
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $paymentMethods = PaymentMethod::where('user_id', $user->id)->get();
-
-        return view('profile.index', compact('user', 'bookings', 'paymentMethods'));
+        return view('profile.bookings', compact('bookings'));
     }
 
     /**
@@ -41,13 +50,31 @@ class ProfileController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'contact_number' => ['nullable', 'string', 'max:20'],
+            'age' => ['nullable', 'integer', 'min:1', 'max:120'],
+            'gender' => ['nullable', 'string', 'in:Male,Female,Other'],
+            'avatar' => ['nullable', 'image', 'max:2048'], // Max 2MB
         ]);
 
-        $user->update([
+        $data = [
             'name' => $request->name,
             'email' => $request->email,
             'contact_number' => $request->contact_number,
-        ]);
+            'age' => $request->age,
+            'gender' => $request->gender,
+        ];
+
+        // Handle Avatar Upload
+        if ($request->hasFile('avatar')) {
+            // Delete old avatar if exists (optional, but good practice)
+            if ($user->avatar && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->avatar)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->avatar);
+            }
+
+            $path = $request->file('avatar')->store('avatars', 'public');
+            $data['avatar'] = $path;
+        }
+
+        $user->update($data);
 
         return back()->with('success', 'Profile updated successfully.');
     }
