@@ -70,15 +70,18 @@
                                 @endif
                             </td>
                             <td class="text-end pe-4">
+                                <a href="{{ route('admin.manifest', $schedule->id) }}" class="btn btn-sm btn-outline-primary me-1" title="View Passenger Manifest">
+                                    <i class="fa-solid fa-clipboard-list"></i> Manifest
+                                </a>
                                 @if($schedule->status !== 'cancelled')
-                                <form action="{{ route('admin.cancel_schedule', $schedule->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel this trip?');">
+                                <form action="{{ route('admin.cancel_schedule', $schedule->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to cancel this trip?');">
                                     @csrf
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Cancel Trip">
-                                        <i class="fa-solid fa-ban"></i> Cancel
+                                        <i class="fa-solid fa-ban"></i>
                                     </button>
                                 </form>
                                 @else
-                                <button class="btn btn-sm btn-secondary" disabled>Cancelled</button>
+                                <span class="badge bg-secondary">Cancelled</span>
                                 @endif
                             </td>
                         </tr>

@@ -15,6 +15,9 @@ Route::get('/', function () {
 
 // NEW: Public Pages
 Route::get('/schedule', [App\Http\Controllers\PageController::class, 'schedule'])->name('pages.schedule');
+Route::get('/contact', [App\Http\Controllers\PageController::class, 'contact'])->name('pages.contact');
+Route::post('/contact', [App\Http\Controllers\PageController::class, 'submitContact'])->name('contact.submit');
+Route::get('/terminals', [App\Http\Controllers\PageController::class, 'terminals'])->name('pages.terminals');
 
 // --- TRIP & BOOKING ROUTES ---
 
@@ -45,10 +48,16 @@ Route::post('/manage-booking/cancel/{id}', [App\Http\Controllers\GuestBookingCon
 // 7. Success Page
 Route::get('/booking-success/{booking}', [TripController::class, 'showSuccess'])->name('booking.success');
 
+// 8. E-TICKET DOWNLOAD
+Route::get('/ticket/{bookingReference}/download', [App\Http\Controllers\TicketController::class, 'downloadTicket'])->name('ticket.download');
+Route::get('/ticket/{bookingReference}/view', [App\Http\Controllers\TicketController::class, 'viewTicket'])->name('ticket.view');
+
 
 // --- AUTH ROUTES ---
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+Route::post('/login', [AuthController::class, 'login'])
+    ->middleware('throttle:5,1') // SECURITY: Limit to 5 login attempts per minute
+    ->name('login.post');
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
 Route::post('/register', [AuthController::class, 'register'])->name('register.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
@@ -80,6 +89,21 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
 
     Route::get('/bookings', [AdminController::class, 'bookings'])->name('admin.bookings');
     Route::post('/bookings/{id}/cancel', [AdminController::class, 'cancelBooking'])->name('admin.cancel_booking');
+
+    // NEW: Passenger Manifest (Driver Handout)
+    Route::get('/manifest/{scheduleId}', [AdminController::class, 'manifest'])->name('admin.manifest');
+
+    // NEW: Contact Messages Inbox
+    Route::get('/messages', [AdminController::class, 'messages'])->name('admin.messages');
+    Route::get('/messages/{id}', [AdminController::class, 'showMessage'])->name('admin.messages.show');
+    Route::delete('/messages/{id}', [AdminController::class, 'deleteMessage'])->name('admin.messages.delete');
+
+    // NEW: Sales Reports
+    Route::get('/reports/sales', [AdminController::class, 'salesReport'])->name('admin.reports.sales');
+
+    // NEW: User Management
+    Route::get('/users', [AdminController::class, 'users'])->name('admin.users');
+    Route::post('/users/{id}/toggle-ban', [AdminController::class, 'toggleUserBan'])->name('admin.users.toggle_ban');
 });
 
 Route::middleware(['auth'])->group(function () {

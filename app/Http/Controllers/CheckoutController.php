@@ -125,14 +125,35 @@ class CheckoutController extends Controller
 
     /**
      * Step C: Process Payment & Store Booking
+     * 
+     * For ROUND TRIPS: Creates TWO separate booking records that SHARE
+     * the same booking_reference for unified ticket management.
      */
     public function store(Request $request)
     {
-        $request->validate([
+        // FIX #4: Strict validation for phone and payment fields
+        $rules = [
             'guest_name' => 'required|string|max:255',
             'guest_email' => 'required|email|max:255',
-            'guest_phone' => 'required|string|max:20',
-            'payment_method' => 'required|string', // 'saved_method_ID' or 'new_card' or 'new_ewallet'
+            // Philippine phone format: 10-11 digits, allows spaces/dashes
+            'guest_phone' => ['required', 'regex:/^[\d\s\-\+]{10,15}$/'],
+            'payment_method' => 'required|string',
+        ];
+
+        // Add credit card validation if paying with new card
+        if ($request->payment_method === 'new_card') {
+            $rules['card_number'] = ['required', 'regex:/^\d{16}$/'];
+            $rules['card_expiry_month'] = 'required|integer|between:1,12';
+            $rules['card_expiry_year'] = 'required|integer|min:' . date('Y');
+            $rules['card_cvv'] = ['required', 'regex:/^\d{3,4}$/'];
+        }
+
+        $request->validate($rules, [
+            'guest_phone.regex' => 'Phone number must be a valid Philippine mobile number (e.g., 09171234567).',
+            'card_number.regex' => 'Card number must be exactly 16 digits.',
+            'card_expiry_month.between' => 'Expiry month must be between 1 and 12.',
+            'card_expiry_year.min' => 'Card has expired. Year must be ' . date('Y') . ' or later.',
+            'card_cvv.regex' => 'CVV must be 3 or 4 digits.',
         ]);
 
         if (!session()->has('checkout_payload')) {
@@ -140,55 +161,172 @@ class CheckoutController extends Controller
         }
 
         $data = session()->get('checkout_payload');
-        $userId = Auth::id(); // Null if guest
+        $userId = Auth::id();
 
-        // Determine Payment Details
         $paymentMethodStr = $request->payment_method;
-        $paymentStatus = 'paid'; // Simulating successful payment for prototype
+        $paymentStatus = 'paid';
 
-        DB::transaction(function () use ($request, $data, $userId, $paymentMethodStr, $paymentStatus) {
+        $bookingReference = null;
+        $outboundBookingId = null;
 
-            $outboundSchedule = Schedule::find($data['outbound']['schedule_id']);
-            $outboundTotal = ($outboundSchedule->price * $data['adults']) + (($outboundSchedule->price * 0.8) * $data['children']);
+        try {
+            DB::transaction(function () use ($request, $data, $userId, $paymentMethodStr, $paymentStatus, &$outboundBookingId, &$bookingReference) {
 
-            $returnScheduleId = null;
-            $returnSeatNumbers = null;
-            $returnTotal = 0;
+                // ========================================
+                // GENERATE SINGLE BOOKING REFERENCE
+                // ========================================
+                $bookingReference = Booking::generateReference();
 
-            if ($data['type'] === 'roundtrip' && isset($data['return'])) {
-                $returnSchedule = Schedule::find($data['return']['schedule_id']);
-                $returnTotal = ($returnSchedule->price * $data['adults']) + (($returnSchedule->price * 0.8) * $data['children']);
+                // ========================================
+                // 1. CREATE OUTBOUND BOOKING
+                // ========================================
 
-                $returnScheduleId = $returnSchedule->id;
-                $returnSeatNumbers = $data['return']['seats'];
-            }
+                // FIX #2: LOCK SCHEDULE ROW to prevent race condition
+                $outboundSchedule = Schedule::with('bus')
+                    ->where('id', $data['outbound']['schedule_id'])
+                    ->lockForUpdate()
+                    ->first();
 
-            $booking = Booking::create([
-                'user_id' => $userId,
-                'schedule_id' => $outboundSchedule->id,
-                'seat_numbers' => $data['outbound']['seats'],
-                'return_schedule_id' => $returnScheduleId,
-                'return_seat_numbers' => $returnSeatNumbers,
-                'adults' => $data['adults'],
-                'children' => $data['children'],
-                'total_price' => $outboundTotal + $returnTotal,
-                'status' => 'confirmed',
-                'guest_name' => $request->guest_name,
-                'guest_email' => $request->guest_email,
-                'guest_phone' => $request->guest_phone,
-                'payment_method' => $paymentMethodStr,
-                'payment_status' => $paymentStatus,
-            ]);
+                if (!$outboundSchedule || !$outboundSchedule->bus) {
+                    throw new \Exception('Schedule not found. Please search again.');
+                }
 
-            // Store main booking ID for success page
-            session()->put('last_booking_id', $booking->id);
-        });
+                // FIX #1: TIME TRAVEL CHECK - Ensure schedule is in the future
+                $departureDateTime = \Carbon\Carbon::parse(
+                    $outboundSchedule->departure_date . ' ' . $outboundSchedule->departure_time
+                );
+                if ($departureDateTime->isPast()) {
+                    throw new \Exception('This schedule has already departed. Please select a future trip.');
+                }
+
+                // FIX #2: CHECK SEAT AVAILABILITY (prevent double booking)
+                $existingBookings = Booking::where('schedule_id', $outboundSchedule->id)
+                    ->where('status', '!=', 'cancelled')
+                    ->pluck('seat_numbers')
+                    ->flatten()
+                    ->toArray();
+
+                $requestedSeats = $data['outbound']['seats'];
+                $conflictingSeats = array_intersect($requestedSeats, $existingBookings);
+
+                if (!empty($conflictingSeats)) {
+                    throw new \Exception('Seats ' . implode(', ', $conflictingSeats) . ' are no longer available. Please select different seats.');
+                }
+
+                // FIX #5: SERVER-SIDE PRICE CALCULATION (ignore any client-submitted price)
+                $outboundTotal = ($outboundSchedule->price * $data['adults']) + (($outboundSchedule->price * 0.8) * $data['children']);
+
+                $outboundBooking = Booking::create([
+                    'user_id' => $userId,
+                    'schedule_id' => $outboundSchedule->id,
+                    'bus_number' => $outboundSchedule->bus->bus_number, // FIX #2: Lock bus to ticket
+                    'seat_numbers' => $data['outbound']['seats'],
+                    'adults' => $data['adults'],
+                    'children' => $data['children'],
+                    'total_price' => $outboundTotal,
+                    'status' => 'confirmed',
+                    'guest_name' => $request->guest_name,
+                    'guest_email' => $request->guest_email,
+                    'guest_phone' => $request->guest_phone,
+                    'payment_method' => $paymentMethodStr,
+                    'payment_status' => $paymentStatus,
+                    'trip_type' => $data['type'] === 'roundtrip' ? 'roundtrip_outbound' : 'oneway',
+                    'booking_reference' => $bookingReference,
+                ]);
+
+                $outboundBookingId = $outboundBooking->id;
+
+                // ========================================
+                // 2. CREATE RETURN BOOKING (If Round Trip)
+                // ========================================
+                if ($data['type'] === 'roundtrip' && isset($data['return'])) {
+                    // FIX #2: LOCK RETURN SCHEDULE ROW
+                    $returnSchedule = Schedule::with('bus')
+                        ->where('id', $data['return']['schedule_id'])
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (!$returnSchedule || !$returnSchedule->bus) {
+                        throw new \Exception('Return schedule not found. Please search again.');
+                    }
+
+                    // FIX #1: TIME TRAVEL CHECK for return trip
+                    $returnDateTime = \Carbon\Carbon::parse(
+                        $returnSchedule->departure_date . ' ' . $returnSchedule->departure_time
+                    );
+                    if ($returnDateTime->isPast()) {
+                        throw new \Exception('Return schedule has already departed.');
+                    }
+
+                    // FIX #1: Ensure return date is after outbound date
+                    if ($returnDateTime->lessThanOrEqualTo($departureDateTime)) {
+                        throw new \Exception('Return trip must be after the outbound trip.');
+                    }
+
+                    // FIX #2: CHECK SEAT AVAILABILITY for return
+                    $existingReturnBookings = Booking::where('schedule_id', $returnSchedule->id)
+                        ->where('status', '!=', 'cancelled')
+                        ->pluck('seat_numbers')
+                        ->flatten()
+                        ->toArray();
+
+                    $requestedReturnSeats = $data['return']['seats'];
+                    $conflictingReturnSeats = array_intersect($requestedReturnSeats, $existingReturnBookings);
+
+                    if (!empty($conflictingReturnSeats)) {
+                        throw new \Exception('Return seats ' . implode(', ', $conflictingReturnSeats) . ' are no longer available.');
+                    }
+
+                    // FIX #5: SERVER-SIDE PRICE for return
+                    $returnTotal = ($returnSchedule->price * $data['adults']) + (($returnSchedule->price * 0.8) * $data['children']);
+
+                    $returnBooking = Booking::create([
+                        'user_id' => $userId,
+                        'schedule_id' => $returnSchedule->id,
+                        'bus_number' => $returnSchedule->bus->bus_number, // FIX #2: Lock bus to ticket
+                        'seat_numbers' => $data['return']['seats'],
+                        'adults' => $data['adults'],
+                        'children' => $data['children'],
+                        'total_price' => $returnTotal,
+                        'status' => 'confirmed',
+                        'guest_name' => $request->guest_name,
+                        'guest_email' => $request->guest_email,
+                        'guest_phone' => $request->guest_phone,
+                        'payment_method' => $paymentMethodStr,
+                        'payment_status' => $paymentStatus,
+                        'trip_type' => 'roundtrip_return',
+                        'linked_booking_id' => $outboundBooking->id,
+                        'booking_reference' => $bookingReference,
+                    ]);
+
+                    // Link outbound to return for bidirectional reference
+                    $outboundBooking->update(['linked_booking_id' => $returnBooking->id]);
+                }
+
+                session()->put('last_booking_id', $outboundBookingId);
+                session()->put('last_booking_reference', $bookingReference);
+
+                // ========================================
+                // FIX #3: SYNC PHONE TO USER PROFILE
+                // Save contact number to user profile for future bookings
+                // ========================================
+                if ($userId && $request->guest_phone) {
+                    $user = \App\Models\User::find($userId);
+                    if ($user && empty($user->contact_number)) {
+                        $user->update(['contact_number' => $request->guest_phone]);
+                    }
+                }
+            });
+        } catch (\Exception $e) {
+            // Clear session to prevent loop and redirect to home with error
+            session()->forget(['checkout_payload', 'outbound_selection']);
+            return redirect()->route('home')->with('error', $e->getMessage());
+        }
 
         // Clear Session
         session()->forget(['checkout_payload', 'outbound_selection']);
 
-        // Redirect
-        $bookingId = session()->get('last_booking_id');
-        return redirect()->route('booking.success', ['booking' => $bookingId]);
+        // Redirect to My Bookings with success message showing the shared reference
+        return redirect()->route('user.bookings')->with('success', "Booking confirmed! Your reference is: {$bookingReference}");
     }
 }

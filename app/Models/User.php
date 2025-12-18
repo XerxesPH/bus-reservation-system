@@ -21,11 +21,11 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role',
+        // 'role' - REMOVED for security (prevents mass assignment attack)
         'contact_number',
-        'avatar', // Added
-        'age',    // Added
-        'gender', // Added
+        'avatar',
+        'age',
+        'gender',
     ];
 
     public function paymentMethods()
@@ -54,5 +54,10 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class);
     }
 }

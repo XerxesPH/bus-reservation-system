@@ -9,7 +9,7 @@
         </a>
     </div>
 
-    <div class="card shadow-sm border-0 rounded-4 mx-auto" style="max-width: 800px;">
+    <div class="card shadow-sm border-0 rounded-4 mx-auto mw-800">
         <div class="card-header bg-white py-3">
             <h5 class="mb-0 fw-bold">Schedule Generator</h5>
         </div>
@@ -98,7 +98,7 @@
                         $timeStr=sprintf('%02d:00:00', $h);
                         $display=date('h:i A', strtotime($timeStr));
                         @endphp
-                        <div class="form-check" style="width: 100px;">
+                        <div class="form-check time-check-wrapper">
                         <input class="form-check-input time-checkbox" type="checkbox" name="times[]" value="{{ $timeStr }}">
                         <label class="form-check-label small">{{ $display }}</label>
                 </div>
@@ -115,19 +115,7 @@
 </div>
 </div>
 
-<script>
-    function selectDays(daysToSelect) {
-        const checkboxes = document.querySelectorAll('.day-checkbox');
-        checkboxes.forEach(cb => {
-            cb.checked = daysToSelect.includes(cb.value);
-        });
-    }
-
-    function toggleTimes(check) {
-        const checkboxes = document.querySelectorAll('.time-checkbox');
-        checkboxes.forEach(cb => {
-            cb.checked = check;
-        });
-    }
-</script>
+@push('scripts')
+<script src="{{ asset('js/admin-templates.js') }}"></script>
+@endpush
 @endsection

@@ -1,5 +1,9 @@
 @extends('layouts.admin')
 
+@push('styles')
+<link href="{{ asset('css/dashboard.css') }}" rel="stylesheet">
+@endpush
+
 @section('content')
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -13,14 +17,14 @@
 
     <div class="row g-4 mb-5">
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm rounded-4 text-white" style="background: linear-gradient(45deg, #11998e, #38ef7d);">
+            <div class="card border-0 shadow-sm rounded-4 text-white card-revenue">
                 <div class="card-body p-4">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h3 class="mb-0 fw-bold">₱{{ number_format($totalRevenue) }}</h3>
                             <small class="text-white-50 text-uppercase fw-bold">Total Revenue</small>
                         </div>
-                        <div class="bg-white bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <div class="bg-white bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center dashboard-icon-circle">
                             <i class="fa-solid fa-sack-dollar fa-lg"></i>
                         </div>
                     </div>
@@ -28,14 +32,14 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm rounded-4 text-white" style="background: linear-gradient(45deg, #3a7bd5, #00d2ff);">
+            <div class="card border-0 shadow-sm rounded-4 text-white card-bookings">
                 <div class="card-body p-4">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h3 class="mb-0 fw-bold">{{ $totalBookings }}</h3>
                             <small class="text-white-50 text-uppercase fw-bold">Total Bookings</small>
                         </div>
-                        <div class="bg-white bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <div class="bg-white bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center dashboard-icon-circle">
                             <i class="fa-solid fa-ticket fa-lg"></i>
                         </div>
                     </div>
@@ -43,14 +47,14 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm rounded-4 text-white" style="background: linear-gradient(45deg, #FF8008, #FFC837);">
+            <div class="card border-0 shadow-sm rounded-4 text-white card-trips">
                 <div class="card-body p-4">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h3 class="mb-0 fw-bold">{{ $todayTrips }}</h3>
                             <small class="text-white-50 text-uppercase fw-bold">Trips Today</small>
                         </div>
-                        <div class="bg-white bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <div class="bg-white bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center dashboard-icon-circle">
                             <i class="fa-solid fa-bus fa-lg"></i>
                         </div>
                     </div>
@@ -58,14 +62,14 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm rounded-4 text-white" style="background: linear-gradient(45deg, #8E2DE2, #4A00E0);">
+            <div class="card border-0 shadow-sm rounded-4 text-white card-users">
                 <div class="card-body p-4">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h3 class="mb-0 fw-bold">{{ $totalUsers }}</h3>
                             <small class="text-white-50 text-uppercase fw-bold">Active Users</small>
                         </div>
-                        <div class="bg-white bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <div class="bg-white bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center dashboard-icon-circle">
                             <i class="fa-solid fa-users fa-lg"></i>
                         </div>
                     </div>

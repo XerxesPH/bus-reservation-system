@@ -46,14 +46,22 @@ class ProfileController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        $request->validate([
+        // Build validation rules
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'contact_number' => ['nullable', 'string', 'max:20'],
             'age' => ['nullable', 'integer', 'min:1', 'max:120'],
             'gender' => ['nullable', 'string', 'in:Male,Female,Other'],
             'avatar' => ['nullable', 'image', 'max:2048'], // Max 2MB
-        ]);
+        ];
+
+        // SECURITY: Require password confirmation when changing email
+        if ($request->email !== $user->email) {
+            $rules['current_password'] = ['required', 'current_password'];
+        }
+
+        $request->validate($rules);
 
         $data = [
             'name' => $request->name,

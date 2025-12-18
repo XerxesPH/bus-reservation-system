@@ -19,11 +19,14 @@ $btnText = $isOutbound ? 'CONFIRM & SELECT RETURN TRIP' : 'PROCEED TO CHECKOUT';
 $btnColor = $isOutbound ? 'btn-dark' : 'btn-success';
 @endphp
 
-<div class="container py-5">
+<div class="container page-container" id="seat-selection"
+    data-adults="{{ $adults }}"
+    data-children="{{ $children }}"
+    data-base-price="{{ $trip->price }}">
     <div class="row g-5">
 
         <div class="col-lg-7">
-            <h4 class="mb-4 fw-bold">
+            <h4 class="section-title">
                 {{ $isOutbound ? 'Step 1: Outbound Seats' : 'Select Seats' }}
             </h4>
 
@@ -73,20 +76,20 @@ $btnColor = $isOutbound ? 'btn-dark' : 'btn-success';
 
         <div class="d-flex justify-content-center gap-4 mt-4">
             <div class="d-flex align-items-center">
-                <div class="btn btn-sm btn-outline-primary disabled seat-btn" style="width:25px;height:25px;"></div><span class="ms-2 small">Available</span>
+                <div class="btn btn-sm btn-outline-primary disabled seat-btn seat-legend-icon"></div><span class="ms-2 small">Available</span>
             </div>
             <div class="d-flex align-items-center">
-                <div class="btn btn-sm btn-warning seat-btn" style="width:25px;height:25px;"></div><span class="ms-2 small">Selected</span>
+                <div class="btn btn-sm btn-warning seat-btn seat-legend-icon"></div><span class="ms-2 small">Selected</span>
             </div>
             <div class="d-flex align-items-center">
-                <div class="btn btn-sm btn-secondary seat-btn" style="width:25px;height:25px;"></div><span class="ms-2 small">Booked</span>
+                <div class="btn btn-sm btn-secondary seat-btn seat-legend-icon"></div><span class="ms-2 small">Booked</span>
             </div>
         </div>
     </div>
 
     {{-- SIDEBAR SUMMARY --}}
     <div class="col-lg-5">
-        <div class="card shadow border-0 sticky-top rounded-4" style="top: 100px;">
+        <div class="card card-unified card-summary">
             <div class="card-header {{ $isOutbound ? 'bg-dark' : 'bg-primary' }} text-white py-3">
                 <h5 class="mb-0">
                     <i class="fa-solid fa-receipt me-2"></i>
@@ -150,7 +153,7 @@ $btnColor = $isOutbound ? 'btn-dark' : 'btn-success';
                     <input type="hidden" name="original_destination" value="{{ request()->input('destination') }}">
                     @endif
 
-                    <button type="submit" class="btn {{ $btnColor }} w-100 py-3 fw-bold shadow-sm" id="checkout-btn" disabled>
+                    <button type="submit" class="btn {{ $btnColor }} btn-unified btn-unified-md w-100" id="checkout-btn" disabled>
                         {{ $btnText }}
                     </button>
                 </form>
@@ -162,64 +165,7 @@ $btnColor = $isOutbound ? 'btn-dark' : 'btn-success';
 </div>
 </div>
 
-<script>
-    let selectedSeats = [];
-
-    const adults = Number("{{ $adults }}");
-    const children = Number("{{ $children }}");
-    const totalPax = adults + children;
-
-    const basePrice = Number("{{ $trip->price }}");
-    const childPrice = basePrice * 0.8;
-    const finalTotal = (adults * basePrice) + (children * childPrice);
-
-    function toggleSeat(button) {
-        const seatNum = button.getAttribute('data-seat');
-
-        if (selectedSeats.includes(seatNum)) {
-            // Deselect
-            selectedSeats = selectedSeats.filter(s => s !== seatNum);
-            button.classList.remove('btn-warning');
-            button.classList.add('btn-outline-primary');
-        } else {
-            // Select (Enforce Limit)
-            if (selectedSeats.length >= totalPax) {
-                alert(`You can only select ${totalPax} seat(s).`);
-                return;
-            }
-            selectedSeats.push(seatNum);
-            button.classList.remove('btn-outline-primary');
-            button.classList.add('btn-warning');
-        }
-        updateUI();
-    }
-
-    function updateUI() {
-        const count = selectedSeats.length;
-        document.getElementById('display-seats').innerText = count > 0 ? selectedSeats.join(', ') : '-';
-
-        // Update Hidden Input
-        document.getElementById('input-seats').value = JSON.stringify(selectedSeats);
-
-        // Enable Button only if exact number of seats selected
-        const btn = document.getElementById('checkout-btn');
-        const priceDisplay = document.getElementById('total-price');
-
-        // Always show the target price
-        priceDisplay.innerText = finalTotal.toLocaleString('en-US', {
-            minimumFractionDigits: 2
-        });
-
-        if (count === totalPax) {
-            btn.removeAttribute('disabled');
-        } else {
-            btn.setAttribute('disabled', 'true');
-        }
-    }
-
-    // Init price display
-    document.getElementById('total-price').innerText = finalTotal.toLocaleString('en-US', {
-        minimumFractionDigits: 2
-    });
-</script>
+@push('scripts')
+<script src="{{ asset('js/seats.js') }}"></script>
+@endpush
 @endsection

@@ -35,7 +35,7 @@
                         'adults' => request('adults', 1),
                         'children' => request('children', 0)
                     ]) }}"
-                    class="btn {{ $btnClass ?? 'btn-primary' }} w-100 fw-bold">
+                    class="btn {{ $btnClass ?? 'btn-amber' }} w-100 fw-bold">
                     {{ $btnLabel ?? 'Select Seats' }} <i class="fa-solid fa-chevron-right ms-1"></i>
                 </a>
 

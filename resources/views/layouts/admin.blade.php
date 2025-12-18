@@ -13,95 +13,10 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f8f9fa;
-        }
-
-        /* Sidebar Styling */
-        .sidebar {
-            height: 100vh;
-            width: 250px;
-            position: fixed;
-            top: 0;
-            left: 0;
-            background-color: #2c3e50;
-            padding-top: 20px;
-            color: #ecf0f1;
-            z-index: 1000;
-            transition: all 0.3s;
-        }
-
-        .sidebar-header {
-            padding: 20px;
-            text-align: center;
-            border-bottom: 1px solid #34495e;
-            margin-bottom: 20px;
-        }
-
-        .sidebar-header h4 {
-            font-weight: 700;
-            color: #fff;
-            margin: 0;
-        }
-
-        .sidebar-menu {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .sidebar-menu li {
-            padding: 0;
-        }
-
-        .sidebar-menu li a {
-            display: flex;
-            align-items: center;
-            padding: 15px 25px;
-            color: #bdc3c7;
-            text-decoration: none;
-            transition: all 0.3s;
-            border-left: 4px solid transparent;
-        }
-
-        .sidebar-menu li a:hover,
-        .sidebar-menu li a.active {
-            background-color: #34495e;
-            color: #fff;
-            border-left-color: #3498db;
-        }
-
-        .sidebar-menu li a i {
-            width: 30px;
-            font-size: 1.1rem;
-        }
-
-        /* Main Content Styling */
-        .main-content {
-            margin-left: 250px;
-            padding: 30px;
-            padding-top: 50px;
-            /* Spacing for top area */
-            min-height: 100vh;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .sidebar {
-                margin-left: -250px;
-            }
-
-            .sidebar.active {
-                margin-left: 0;
-            }
-
-            .main-content {
-                margin-left: 0;
-            }
-        }
-    </style>
+    <!-- Admin CSS -->
+    <link href="{{ asset('css/admin.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/style.css') }}" rel="stylesheet">
+    @stack('styles')
 </head>
 
 <body>
@@ -138,6 +53,34 @@
                     <i class="fa-solid fa-bus"></i> Buses
                 </a>
             </li>
+
+            {{-- NEW FEATURES --}}
+            <li class="mt-3">
+                <small class="text-muted px-4 text-uppercase fw-bold" style="font-size: 0.65rem; letter-spacing: 1px;">Management</small>
+            </li>
+            <li>
+                <a href="{{ route('admin.messages') }}" class="{{ request()->routeIs('admin.messages*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-envelope"></i> Messages
+                    @php $unreadCount = \App\Models\Message::where('is_read', false)->count(); @endphp
+                    @if($unreadCount > 0)
+                    <span class="badge bg-danger rounded-pill ms-2">{{ $unreadCount }}</span>
+                    @endif
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('admin.users') }}" class="{{ request()->routeIs('admin.users*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-users"></i> Users
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('admin.reports.sales') }}" class="{{ request()->routeIs('admin.reports*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-chart-line"></i> Sales Report
+                </a>
+            </li>
+
+            <li class="mt-3">
+                <small class="text-muted px-4 text-uppercase fw-bold" style="font-size: 0.65rem; letter-spacing: 1px;">Links</small>
+            </li>
             <li>
                 <a href="{{ route('home') }}">
                     <i class="fa-solid fa-house"></i> View Website
@@ -162,29 +105,14 @@
             <h5 class="m-0 fw-bold">Southern Lines Admin</h5>
         </div>
 
-        @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        @endif
 
         @yield('content')
     </div>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Simple sidebar toggle for mobile
-        const toggleBtn = document.getElementById('sidebarToggle');
-        const sidebar = document.querySelector('.sidebar');
-
-        if (toggleBtn) {
-            toggleBtn.addEventListener('click', function() {
-                sidebar.classList.toggle('active');
-            });
-        }
-    </script>
+    <script src="{{ asset('js/admin.js') }}"></script>
+    @stack('scripts')
 </body>
 
 </html>

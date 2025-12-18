@@ -1,18 +1,20 @@
 @extends('layouts.app')
 
+@push('styles')
+<link href="{{ asset('css/profile.css') }}" rel="stylesheet">
+@endpush
+
 @section('content')
-<div class="container py-5">
-    <div class="row mb-4">
-        <div class="col-12">
-            <h2 class="fw-bold">My Account</h2>
-            <p class="text-muted">Manage your profile, security, payments, and bookings.</p>
-        </div>
+<div class="container page-container">
+    <div class="page-header-left">
+        <h1 class="page-title">My Account</h1>
+        <p class="page-subtitle">Manage your profile, security, payments, and bookings.</p>
     </div>
 
     <div class="row g-5">
         {{-- Sidebar Navigation --}}
         <div class="col-lg-3">
-            <div class="card border-0 shadow-sm rounded-4">
+            <div class="card card-unified">
                 <div class="card-body p-0">
                     <div class="list-group list-group-flush rounded-4 overflow-hidden">
                         <a href="#profile" class="list-group-item list-group-item-action py-3 px-4 active" data-bs-toggle="list">
@@ -60,9 +62,9 @@
 
                 {{-- 1. Profile Settings --}}
                 <div class="tab-pane fade show active" id="profile">
-                    <div class="card border-0 shadow-sm rounded-4">
-                        <div class="card-header bg-white py-3">
-                            <h5 class="mb-0 fw-bold">Personal Information</h5>
+                    <div class="card card-unified">
+                        <div class="card-header">
+                            <h5 class="card-header-title">Personal Information</h5>
                         </div>
                         <div class="card-body p-4">
                             <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data">
@@ -73,9 +75,9 @@
                                 <div class="mb-4 text-center">
                                     <div class="mb-3">
                                         @if($user->avatar)
-                                        <img src="{{ asset('storage/' . $user->avatar) }}" alt="Profile Avatar" class="rounded-circle shadow-sm" style="width: 120px; height: 120px; object-fit: cover;">
+                                        <img src="{{ asset('storage/' . $user->avatar) }}" alt="Profile Avatar" class="rounded-circle shadow-sm avatar-lg">
                                         @else
-                                        <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm text-secondary" style="width: 120px; height: 120px; font-size: 3rem;">
+                                        <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm text-secondary avatar-placeholder-lg">
                                             <i class="fa-solid fa-user"></i>
                                         </div>
                                         @endif
@@ -117,7 +119,7 @@
                                 </div>
 
                                 <div class="text-end mt-4">
-                                    <button type="submit" class="btn btn-primary px-4 fw-bold">Save Changes</button>
+                                    <button type="submit" class="btn btn-navy px-4 fw-bold">Save Changes</button>
                                 </div>
                             </form>
                         </div>
@@ -147,7 +149,7 @@
                                     <input type="password" name="password_confirmation" class="form-control" required>
                                 </div>
                                 <div class="text-end mt-4">
-                                    <button type="submit" class="btn btn-primary px-4 fw-bold">Update Password</button>
+                                    <button type="submit" class="btn btn-navy px-4 fw-bold">Update Password</button>
                                 </div>
                             </form>
                         </div>
@@ -260,35 +262,14 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Save Method</button>
+                    <button type="submit" class="btn btn-navy">Save Method</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<script>
-    // Simple script to toggle fields in modal
-    document.getElementById('paymentType').addEventListener('change', function() {
-        const type = this.value;
-        const cardFields = document.getElementById('cardFields');
-        const walletFields = document.getElementById('walletFields');
-
-        // Inputs
-        const cardInputs = cardFields.querySelectorAll('input, select');
-        const walletInputs = walletFields.querySelectorAll('input, select');
-
-        if (type === 'card') {
-            cardFields.classList.remove('d-none');
-            walletFields.classList.add('d-none');
-            cardInputs.forEach(el => el.disabled = false);
-            walletInputs.forEach(el => el.disabled = true);
-        } else {
-            cardFields.classList.add('d-none');
-            walletFields.classList.remove('d-none');
-            cardInputs.forEach(el => el.disabled = true);
-            walletInputs.forEach(el => el.disabled = false);
-        }
-    });
-</script>
+@push('scripts')
+<script src="{{ asset('js/profile.js') }}"></script>
+@endpush
 @endsection

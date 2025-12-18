@@ -1,207 +1,10 @@
 @extends('layouts.app')
 
+@push('styles')
+<link href="{{ asset('css/register.css') }}" rel="stylesheet">
+@endpush
+
 @section('content')
-<style>
-    /* Scoped wrapper to ensure we don't break the Navbar from layouts.app */
-    .register-wrapper {
-        font-family: 'Roboto', sans-serif;
-        background-color: #f5f5f5;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        /* Subtracting navbar padding */
-        min-height: calc(100vh - 100px);
-        width: 100%;
-        padding: 20px;
-    }
-
-    /* Main Form Container */
-    .register-card {
-        background-color: #ffffff;
-        padding: 2.5rem;
-        border-radius: 16px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        width: 100%;
-        max-width: 420px;
-        /* Slightly wider to accommodate content */
-    }
-
-    /* Form Title */
-    .register-card h1 {
-        text-align: center;
-        color: #444;
-        font-size: 1.8rem;
-        font-weight: 700;
-        margin-top: 0;
-        margin-bottom: 2rem;
-    }
-
-    /* Styling for each input group */
-    .form-group {
-        margin-bottom: 1.25rem;
-    }
-
-    /* Labels */
-    .form-group label {
-        display: block;
-        margin-bottom: 0.5rem;
-        color: #888;
-        font-size: 0.9rem;
-        font-weight: 500;
-        text-align: left;
-    }
-
-    /* Standard Inputs */
-    .register-card input[type="text"],
-    .register-card input[type="password"],
-    .register-card input[type="email"],
-    .register-card input[type="date"] {
-        width: 100%;
-        padding: 0.9rem 1rem;
-        border: 1px solid #eee;
-        border-radius: 8px;
-        box-sizing: border-box;
-        font-size: 1rem;
-        color: #333;
-        background-color: #fff;
-        transition: border-color 0.2s;
-    }
-
-    /* Error Styling */
-    .register-card input.is-invalid {
-        border-color: #dc3545;
-    }
-
-    .register-card input:focus {
-        border-color: #bbb;
-        outline: none;
-        box-shadow: none;
-        /* Override bootstrap */
-    }
-
-    .error-msg {
-        color: #dc3545;
-        font-size: 0.8rem;
-        margin-top: 5px;
-        display: block;
-    }
-
-    /* Date Input Specifics */
-    .date-input-wrapper {
-        position: relative;
-        width: 100%;
-    }
-
-    .date-input-wrapper input {
-        padding-left: 2.8rem !important;
-    }
-
-    .date-icon {
-        position: absolute;
-        left: 1rem;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #555;
-        font-size: 1.2rem;
-        pointer-events: none;
-    }
-
-    /* Sign Up Button */
-    .btn-signup {
-        width: 100%;
-        padding: 1rem;
-        border: none;
-        border-radius: 8px;
-        background-color: #7E2E5F;
-        color: white;
-        font-size: 1.1rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition: background-color 0.2s;
-        margin-top: 0.5rem;
-    }
-
-    .btn-signup:hover {
-        background-color: #65244b;
-    }
-
-    /* "or" Divider */
-    .divider {
-        display: flex;
-        align-items: center;
-        text-align: center;
-        margin: 1.5rem 0;
-        color: #aaa;
-    }
-
-    .divider::before,
-    .divider::after {
-        content: '';
-        flex: 1;
-        border-bottom: 1px solid #eee;
-    }
-
-    .divider span {
-        padding: 0 1rem;
-        font-size: 0.9rem;
-    }
-
-    /* Google Button */
-    .btn-google {
-        width: 100%;
-        padding: 0.9rem;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        background-color: #ffffff;
-        color: #666;
-        font-size: 1rem;
-        font-weight: 500;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: background-color 0.2s;
-        text-decoration: none;
-    }
-
-    .btn-google:hover {
-        background-color: #f9f9f9;
-        border-color: #ccc;
-        text-decoration: none;
-        color: #666;
-    }
-
-    .google-icon {
-        width: 20px;
-        height: 20px;
-        margin-right: 12px;
-    }
-
-    /* Footer */
-    .form-footer {
-        text-align: center;
-        margin-top: 1.8rem;
-        color: #888;
-        font-size: 0.95rem;
-    }
-
-    .form-footer a {
-        color: #5b86e5;
-        text-decoration: none;
-        font-weight: 600;
-    }
-
-    .alert-box {
-        background-color: #f8d7da;
-        color: #721c24;
-        padding: 10px;
-        border-radius: 8px;
-        font-size: 13px;
-        margin-bottom: 20px;
-        border: 1px solid #f5c6cb;
-    }
-</style>
-
 <div class="register-wrapper">
     <div class="register-card">
         <h1>Create your Account</h1>
@@ -225,22 +28,17 @@
 
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="................" class="@error('password') is-invalid @enderror" required>
+                <input type="password" id="password" name="password" placeholder="" class="@error('password') is-invalid @enderror" required>
                 @error('password')
                 <span class="error-msg">{{ $message }}</span>
                 @enderror
             </div>
 
             <div class="form-group">
-                <label for="password_confirmation">Confirm Password</label>
-                <input type="password" id="password_confirmation" name="password_confirmation" placeholder="................" required>
-            </div>
-
-            <div class="form-group">
                 <label for="dob">Date of Birth</label>
                 <div class="date-input-wrapper">
                     <span class="date-icon">📅</span>
-                    <input type="text" id="dob" name="dob" placeholder="12 December 2025" onfocus="(this.type='date')" onblur="(this.type='text')" value="{{ old('dob') }}">
+                    <input type="text" id="dob" name="dob" placeholder="12 December 2025" onfocus="(this.type='date')" onblur="if(!this.value)this.type='text'" value="{{ old('dob') }}">
                 </div>
             </div>
 

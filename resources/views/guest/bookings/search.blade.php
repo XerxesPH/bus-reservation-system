@@ -34,7 +34,7 @@
                             <div class="form-text text-center small">Used during booking.</div>
                         </div>
 
-                        <button type="submit" class="btn btn-primary w-100 py-3 fw-bold rounded-3 shadow-sm">
+                        <button type="submit" class="btn btn-navy w-100 py-3 fw-bold rounded-3 shadow-sm">
                             FIND BOOKING
                         </button>
                     </form>

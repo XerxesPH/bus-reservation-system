@@ -1,346 +1,927 @@
 @extends('layouts.app')
 
+@push('styles')
+{{-- Google Fonts for Cursive --}}
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
+{{-- Leaflet CSS --}}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+<style>
+    /* ===== BRAND COLORS ===== */
+    :root {
+        --navy: #1E293B;
+        --navy-light: #334155;
+        --amber: #FFC107;
+        --amber-hover: #FFB300;
+    }
+
+    /* ===== HERO SECTION ===== */
+    .hero-section {
+        min-height: 90vh;
+        padding-top: 100px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero-tagline {
+        color: var(--navy);
+        font-weight: 600;
+        font-size: 0.875rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+    }
+
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: 700;
+        color: var(--navy);
+        line-height: 1.2;
+    }
+
+    .hero-title .cursive {
+        font-family: 'Playfair Display', serif;
+        font-style: italic;
+        color: var(--amber);
+    }
+
+    .hero-text {
+        color: #64748B;
+        font-size: 1.1rem;
+        line-height: 1.8;
+    }
+
+    .btn-cta {
+        background-color: var(--amber);
+        color: var(--navy);
+        font-weight: 700;
+        padding: 14px 32px;
+        border-radius: 8px;
+        border: none;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .btn-cta:hover {
+        background-color: var(--amber-hover);
+        color: var(--navy);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(255, 193, 7, 0.3);
+    }
+
+    .hero-image-wrapper {
+        position: relative;
+    }
+
+    .hero-blob {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 90%;
+        height: 90%;
+        background: linear-gradient(135deg, #FFC107 0%, #FFE082 100%);
+        border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+        z-index: 0;
+        animation: blob-morph 8s ease-in-out infinite;
+    }
+
+    @keyframes blob-morph {
+
+        0%,
+        100% {
+            border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+        }
+
+        50% {
+            border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+        }
+    }
+
+    .hero-img {
+        position: relative;
+        z-index: 1;
+        max-height: 500px;
+        object-fit: contain;
+    }
+
+    /* ===== BOOKING WIDGET ===== */
+    .booking-widget {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+        padding: 2.5rem;
+        margin-top: -80px;
+        position: relative;
+        z-index: 10;
+    }
+
+    .booking-widget .form-label {
+        font-weight: 600;
+        color: var(--navy);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 0.5rem;
+    }
+
+    .booking-widget .form-control,
+    .booking-widget .form-select {
+        border: 2px solid #E2E8F0;
+        border-radius: 10px;
+        padding: 12px 16px;
+        font-size: 0.95rem;
+        transition: all 0.2s ease;
+    }
+
+    .booking-widget .form-control:focus,
+    .booking-widget .form-select:focus {
+        border-color: var(--amber);
+        box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.15);
+    }
+
+    .trip-type-btn {
+        padding: 10px 24px;
+        border: 2px solid #E2E8F0;
+        background: white;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: #64748B;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .trip-type-btn.active {
+        border-color: var(--navy);
+        background: var(--navy);
+        color: white;
+    }
+
+    .btn-find-tickets {
+        background: var(--amber);
+        color: var(--navy);
+        font-weight: 700;
+        padding: 16px 32px;
+        border-radius: 10px;
+        border: none;
+        font-size: 1rem;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-find-tickets:hover {
+        background: var(--amber-hover);
+        color: var(--navy);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(255, 193, 7, 0.4);
+    }
+
+    /* ===== SECTION STYLES ===== */
+    .section-padding {
+        padding: 100px 0;
+    }
+
+    .section-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--navy);
+        margin-bottom: 1rem;
+    }
+
+    .section-subtitle {
+        color: #64748B;
+        font-size: 1.1rem;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    /* ===== TERMINALS & MAP ===== */
+    #map {
+        height: 450px;
+        width: 100%;
+        border-radius: 16px;
+        z-index: 1;
+    }
+
+    .terminal-list {
+        max-height: 450px;
+        overflow-y: auto;
+    }
+
+    .terminal-item {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-left: 4px solid transparent;
+        padding: 1rem 1.25rem;
+    }
+
+    .terminal-item:hover {
+        background-color: #FFF8E1;
+        border-left-color: var(--amber);
+    }
+
+    .terminal-item.active {
+        background-color: #FFF8E1;
+        border-left-color: var(--amber);
+    }
+
+    .route-info {
+        display: none;
+    }
+
+    .route-info.show {
+        display: block;
+    }
+
+    .leaflet-routing-container {
+        display: none;
+    }
+
+    /* ===== SERVICES ===== */
+    .service-card {
+        background: white;
+        border-radius: 16px;
+        padding: 2.5rem 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        border: 1px solid #E2E8F0;
+    }
+
+    .service-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .service-icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        font-size: 1.75rem;
+    }
+
+    .service-icon.navy {
+        background: rgba(30, 41, 59, 0.1);
+        color: var(--navy);
+    }
+
+    .service-icon.amber {
+        background: rgba(255, 193, 7, 0.2);
+        color: #B7791F;
+    }
+
+    .service-title {
+        font-weight: 700;
+        color: var(--navy);
+        margin-bottom: 0.75rem;
+    }
+
+    /* ===== DESTINATIONS ===== */
+    .destination-card {
+        border-radius: 16px;
+        overflow: hidden;
+        background: white;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+    }
+
+    .destination-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .destination-card img {
+        height: 200px;
+        width: 100%;
+        object-fit: cover;
+    }
+
+    .destination-card .card-body {
+        padding: 1.25rem;
+    }
+
+    .destination-card .card-title {
+        font-weight: 700;
+        color: var(--navy);
+        margin-bottom: 0;
+    }
+
+    /* ===== STEPS SECTION ===== */
+    .steps-section {
+        background: linear-gradient(135deg, #F8FAFC 0%, #EEF2FF 100%);
+    }
+
+    .step-item {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 2rem;
+    }
+
+    .step-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        color: white;
+        flex-shrink: 0;
+        margin-right: 1.25rem;
+    }
+
+    .step-icon.amber {
+        background: var(--amber);
+        color: var(--navy);
+    }
+
+    .step-icon.navy {
+        background: var(--navy);
+    }
+
+    .step-icon.success {
+        background: #10B981;
+    }
+
+    .step-title {
+        font-weight: 700;
+        color: var(--navy);
+        margin-bottom: 0.5rem;
+    }
+
+    .step-text {
+        color: #64748B;
+        font-size: 0.95rem;
+        line-height: 1.7;
+    }
+
+    .phone-mockup {
+        background: white;
+        border-radius: 24px;
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+        padding: 1rem;
+        transform: rotate(5deg);
+        max-width: 280px;
+        margin: 0 auto;
+    }
+
+    .phone-mockup img {
+        border-radius: 16px;
+        width: 100%;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 992px) {
+        .hero-title {
+            font-size: 2.5rem;
+        }
+
+        .booking-widget {
+            margin-top: 2rem;
+            padding: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 2rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .hero-section {
+            min-height: auto;
+            padding-top: 80px;
+            padding-bottom: 40px;
+        }
+
+        .hero-title {
+            font-size: 2rem;
+        }
+
+        .hero-blob {
+            display: none;
+        }
+    }
+</style>
+@endpush
+
 @section('content')
 
-{{--
-    1. ERROR ALERT (UPDATED)
-    - Changed to position-fixed so it floats over the content.
-    - Centered horizontally using start-50 translate-middle-x.
-    - Added z-index to ensure it sits on top of everything.
---}}
+{{-- Error Alert --}}
 @if(session('error'))
 <div class="position-fixed start-50 translate-middle-x" style="z-index: 1050; top: 100px; width: 90%; max-width: 600px;">
     <div class="alert alert-danger alert-dismissible fade show shadow-lg border-0 rounded-3" role="alert">
         <div class="d-flex align-items-center">
             <i class="fa-solid fa-circle-exclamation fa-lg me-3"></i>
-            <div>
-                <strong>Oops!</strong> {{ session('error') }}
-            </div>
+            <div><strong>Oops!</strong> {{ session('error') }}</div>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 </div>
 @endif
 
-{{--
-    MAIN CONTENT WRAPPER (UPDATED)
-    - Removed manual padding-top since layout handles it now.
---}}
-<div>
+{{-- ===== 1. HERO SECTION ===== --}}
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            {{-- Left: Text --}}
+            <div class="col-lg-6">
+                <p class="hero-tagline mb-3">
+                    <i class="fa-solid fa-bus me-2"></i> Best Bus Travel in Calabarzon
+                </p>
 
-    {{-- 1. HERO SECTION --}}
-    <div class="container mt-4">
-        <div class="row align-items-center">
-            <div class="col-lg-5 ps-lg-5">
-                <p class="text-danger fw-bold small mb-2" style="letter-spacing: 1px;">BEST BUS TRAVEL AROUND THE CALABARZON</p>
-
-                <h1 class="display-4 fw-bold mb-4" style="line-height: 1.2;">
-                    Transport, <span class="text-danger underline-red fst-italic">enjoy</span><br>
+                <h1 class="hero-title mb-4">
+                    Travel, <span class="cursive">enjoy</span><br>
                     and Have a Great<br>
                     Experience with us
                 </h1>
 
-                <p class="text-muted mb-4" style="font-size: 0.9rem; line-height: 1.6;">
-                    Travel smarter, not harder. We offer auto-ticketing so you get
-                    your e-ticket right after payment via online. Plus, with
-                    Safe Travel protocols, sanitized buses & GPS, your journey is always safe.
+                <p class="hero-text mb-4">
+                    Travel smarter, not harder. We offer auto-ticketing so you get your e-ticket
+                    right after payment. Plus, with Safe Travel protocols, sanitized buses & GPS
+                    tracking, your journey is always safe and comfortable.
                 </p>
 
-                <a href="#book-section" class="btn btn-yellow shadow-sm text-uppercase small fw-bold">Read More</a>
+                <a href="#book-section" class="btn btn-cta">
+                    <i class="fa-solid fa-ticket me-2"></i> Book Now
+                </a>
             </div>
 
-            <div class="col-lg-7 position-relative text-center">
-                <img src="{{ asset('images/traveler.png') }}"
-                    alt="Traveler" class="img-fluid rounded-4" style="max-height: 500px; width: 100%; object-fit: cover;">
+            {{-- Right: Image with Blob --}}
+            <div class="col-lg-6">
+                <div class="hero-image-wrapper text-center">
+                    <div class="hero-blob"></div>
+                    <img src="{{ asset('images/traveler.png') }}" alt="Happy Traveler" class="hero-img img-fluid">
+                </div>
             </div>
         </div>
     </div>
+</section>
 
-    {{-- 2. BOOK NOW FORM --}}
-    <div id="book-section" class="container mt-5 mb-5">
-        <div class="text-center mb-4">
-            <h2 class="fw-bold">Book Now</h2>
+{{-- ===== 2. BOOKING WIDGET ===== --}}
+<section id="book-section" class="pb-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="booking-widget">
+                    <form action="{{ route('trips.search') }}" method="GET">
+                        <div class="row g-4">
+                            {{-- Origin --}}
+                            <div class="col-md-6 col-lg-3">
+                                <label class="form-label">
+                                    <i class="fa-solid fa-location-dot me-1"></i> From
+                                </label>
+                                <select name="origin" class="form-select" required>
+                                    <option value="" selected disabled>Select Origin</option>
+                                    @foreach($terminals as $t)
+                                    <option value="{{ $t->id }}">{{ $t->city }} - {{ $t->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            {{-- Destination --}}
+                            <div class="col-md-6 col-lg-3">
+                                <label class="form-label">
+                                    <i class="fa-solid fa-location-crosshairs me-1"></i> To
+                                </label>
+                                <select name="destination" class="form-select" required>
+                                    <option value="" selected disabled>Select Destination</option>
+                                    @foreach($terminals as $t)
+                                    <option value="{{ $t->id }}">{{ $t->city }} - {{ $t->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            {{-- Departure Date --}}
+                            <div class="col-md-6 col-lg-3">
+                                <label class="form-label">
+                                    <i class="fa-regular fa-calendar me-1"></i> Departure
+                                </label>
+                                <input type="date" name="date" class="form-control" required min="{{ date('Y-m-d') }}">
+                            </div>
+
+                            {{-- Passengers --}}
+                            <div class="col-md-6 col-lg-3">
+                                <label class="form-label">
+                                    <i class="fa-solid fa-users me-1"></i> Passengers
+                                </label>
+                                <div class="d-flex gap-2">
+                                    <div class="flex-fill">
+                                        <select name="adults" class="form-select">
+                                            @for($i = 1; $i <= 10; $i++)
+                                                <option value="{{ $i }}">{{ $i }} Adult{{ $i > 1 ? 's' : '' }}</option>
+                                                @endfor
+                                        </select>
+                                    </div>
+                                    <div class="flex-fill">
+                                        <select name="children" class="form-select">
+                                            @for($i = 0; $i <= 5; $i++)
+                                                <option value="{{ $i }}">{{ $i }} Child{{ $i != 1 ? 'ren' : '' }}</option>
+                                                @endfor
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Trip Type & Return Fields --}}
+                        <div class="row g-4 mt-2">
+                            <div class="col-12">
+                                <div class="d-flex align-items-center gap-3 flex-wrap">
+                                    <span class="form-label mb-0">Trip Type:</span>
+                                    <div class="d-flex gap-2">
+                                        <label class="trip-type-btn active" id="onewayBtn">
+                                            <input type="radio" name="trip_type" value="oneway" checked class="d-none" onclick="toggleLayout(false)">
+                                            One Way
+                                        </label>
+                                        <label class="trip-type-btn" id="roundtripBtn">
+                                            <input type="radio" name="trip_type" value="roundtrip" class="d-none" onclick="toggleLayout(true)">
+                                            Round Trip
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Return Fields (Hidden by default) --}}
+                        <div class="row g-4 mt-2" id="returnRow" style="display: none;">
+                            <div class="col-md-4">
+                                <label class="form-label text-danger">
+                                    <i class="fa-solid fa-rotate-left me-1"></i> Return From
+                                </label>
+                                <select name="return_origin" class="form-select border-danger">
+                                    <option value="" selected disabled>Select Terminal</option>
+                                    @foreach($terminals as $t)
+                                    <option value="{{ $t->id }}">{{ $t->city }} - {{ $t->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-danger">
+                                    <i class="fa-solid fa-rotate-left me-1"></i> Return To
+                                </label>
+                                <select name="return_destination" class="form-select border-danger">
+                                    <option value="" selected disabled>Select Terminal</option>
+                                    @foreach($terminals as $t)
+                                    <option value="{{ $t->id }}">{{ $t->city }} - {{ $t->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-danger">
+                                    <i class="fa-regular fa-calendar me-1"></i> Return Date
+                                </label>
+                                <input type="date" name="return_date" class="form-control border-danger" min="{{ date('Y-m-d') }}">
+                            </div>
+                        </div>
+
+                        {{-- Submit Button --}}
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-find-tickets w-100">
+                                    <i class="fa-solid fa-magnifying-glass me-2"></i> Find Tickets
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{{-- ===== 3. TERMINALS & MAP ===== --}}
+<section class="section-padding bg-light">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">Our Terminals</h2>
+            <p class="section-subtitle">Click a terminal to view its location on the map</p>
         </div>
 
-        {{-- FORM BOX --}}
-        <form action="{{ route('trips.search') }}" method="GET">
-
-            {{-- ROW 1: ORIGIN, DESTINATION, DATE --}}
-            <div class="row justify-content-center g-3">
-                <div class="col-md-4">
-                    <div class="custom-input-group h-100 d-flex flex-column justify-content-center">
-                        <label class="custom-input-label">FROM:</label>
-                        <div class="d-flex align-items-center">
-                            <i class="fa-solid fa-location-dot text-muted me-2 small"></i>
-                            <select name="origin" class="custom-input-field" required>
-                                <option value="" selected disabled>Select Origin</option>
-                                @foreach($terminals as $t)
-                                <option value="{{ $t->id }}">{{ $t->city }} - {{ $t->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-4">
-                    <div class="custom-input-group h-100 d-flex flex-column justify-content-center">
-                        <label class="custom-input-label">TO:</label>
-                        <div class="d-flex align-items-center">
-                            <i class="fa-solid fa-location-dot text-muted me-2 small"></i>
-                            <select name="destination" class="custom-input-field" required>
-                                <option value="" selected disabled>Select Destination</option>
-                                @foreach($terminals as $t)
-                                <option value="{{ $t->id }}">{{ $t->city }} - {{ $t->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-4">
-                    <div class="custom-input-group h-100 d-flex flex-column justify-content-center">
-                        <label class="custom-input-label">DEPARTURE:</label>
-                        <input type="text" name="date" class="custom-input-field" placeholder="DD/MM/YYYY" onfocus="(this.type='date')" required min="{{ date('Y-m-d') }}">
-                    </div>
-                </div>
-            </div>
-
-            {{-- ROW 2: RETURN ORIGIN, RETURN DESTINATION, RETURN DATE (Hidden by default) --}}
-            <div class="row justify-content-center g-3 mt-1" id="returnRow" style="display: none;">
-
-                <div class="col-md-4">
-                    <div class="custom-input-group h-100 d-flex flex-column justify-content-center bg-white border border-danger">
-                        <label class="custom-input-label text-danger">RETURN PICK UP:</label>
-                        <div class="d-flex align-items-center">
-                            <i class="fa-solid fa-location-arrow text-danger me-2 small"></i>
-                            <select name="return_origin" class="custom-input-field">
-                                <option value="" selected disabled>Select Terminal</option>
-                                @foreach($terminals as $t)
-                                <option value="{{ $t->id }}">{{ $t->city }} - {{ $t->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-4">
-                    <div class="custom-input-group h-100 d-flex flex-column justify-content-center bg-white border border-danger">
-                        <label class="custom-input-label text-danger">RETURN DROP OFF:</label>
-                        <div class="d-flex align-items-center">
-                            <i class="fa-solid fa-location-arrow text-danger me-2 small"></i>
-                            <select name="return_destination" class="custom-input-field">
-                                <option value="" selected disabled>Select Terminal</option>
-                                @foreach($terminals as $t)
-                                <option value="{{ $t->id }}">{{ $t->city }} - {{ $t->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-4">
-                    <div class="custom-input-group h-100 d-flex flex-column justify-content-center bg-white border border-danger">
-                        <label class="custom-input-label text-danger">RETURN DATE:</label>
-                        <input type="text" name="return_date" class="custom-input-field" placeholder="DD/MM/YYYY" onfocus="(this.type='date')" min="{{ date('Y-m-d') }}">
-                    </div>
-                </div>
-            </div>
-
-            {{-- NEW ROW for Trip Type --}}
-            <div class="row justify-content-center g-3 mt-3">
-                <div class="col-md-8 text-center">
-                    <div class="d-inline-flex gap-4">
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="trip_type" id="oneWay" value="oneway" checked onclick="toggleLayout(false)">
-                            <label class="form-check-label fw-bold small text-uppercase" for="oneWay">One Way</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="trip_type" id="roundTrip" value="roundtrip" onclick="toggleLayout(true)">
-                            <label class="form-check-label fw-bold small text-uppercase" for="roundTrip">Round Trip</label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- ROW 3: PASSENGERS & BUTTON (Smaller & Centered) --}}
-            <div class="row justify-content-center g-3 mt-1">
-
-                <div class="col-md-4">
-                    <div class="custom-input-group h-100 d-flex flex-column justify-content-center" style="min-height: 48px;">
-                        <label class="custom-input-label">PASSENGERS:</label>
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div class="d-flex align-items-center">
-                                <input type="number" name="adults" class="custom-input-field text-center" value="1" min="1" style="width: 40px;">
-                                <span class="text-muted small ms-1">Adult</span>
-                            </div>
-                            <span class="text-muted">|</span>
-                            <div class="d-flex align-items-center">
-                                <input type="number" name="children" class="custom-input-field text-center" value="0" min="0" style="width: 40px;">
-                                <span class="text-muted small ms-1">Child</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-4">
-                    <button type="submit" class="btn btn-light-purple w-100 h-100 fw-bold shadow-sm" style="min-height: 48px;">
-                        FIND TICKETS
-                    </button>
-                </div>
-            </div>
-
-        </form>
-    </div>
-
-    {{-- 3. MAP AND LOCATIONS --}}
-    <div class="container my-5">
         <div class="row justify-content-center g-4">
-            <div class="col-md-6">
-                <div class="card border shadow-sm rounded-4 p-3 h-100">
-                    <h6 class="fw-bold small mb-3 ms-2">My Route</h6>
-                    <div class="rounded-3 overflow-hidden border">
-                        <img src="https://placehold.co/600x400/png?text=Map+View" alt="Map" class="img-fluid w-100" style="object-fit: cover; height: 300px;">
-                    </div>
+            {{-- Map --}}
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                    <div id="map"></div>
                 </div>
             </div>
 
-            <div class="col-md-4">
-                <div class="card border shadow-sm rounded-4 p-4 h-100">
-                    <h6 class="fw-bold small text-uppercase mb-3 border-bottom pb-2">ALL LOCATION</h6>
-                    <div class="d-flex flex-column gap-2">
-                        <a href="#" class="location-pill active">SAN PABLO</a>
-                        <a href="#" class="location-pill">TANAUAN</a>
-                        <a href="#" class="location-pill">BATANGAS</a>
-                        <a href="#" class="location-pill">CAVITE</a>
-                        <div class="text-center text-muted small mt-2">...</div>
+            {{-- Terminal List --}}
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-lg rounded-4 h-100">
+                    <div class="card-header bg-white py-3 border-0">
+                        <h6 class="mb-0 fw-bold" style="color: var(--navy);">
+                            <i class="fas fa-map-marker-alt me-2" style="color: var(--amber);"></i> All Terminals
+                        </h6>
+                    </div>
+                    <div class="card-body p-0 terminal-list">
+                        @foreach($terminals as $terminal)
+                        <div class="terminal-item border-bottom"
+                            data-terminal-id="{{ $terminal->id }}"
+                            data-lat="{{ $terminal->latitude }}"
+                            data-lng="{{ $terminal->longitude }}"
+                            data-name="{{ $terminal->name }}"
+                            data-city="{{ $terminal->city }}"
+                            data-province="{{ $terminal->province }}"
+                            data-type="{{ $terminal->type }}">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3" style="width: 40px; height: 40px; background: rgba(30,41,59,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-bus" style="color: var(--navy);"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold" style="color: var(--navy);">{{ $terminal->name }}</div>
+                                    <small class="text-muted">{{ $terminal->city }}</small>
+                                </div>
+                                <i class="fas fa-chevron-right text-muted"></i>
+                            </div>
+                        </div>
+                        @endforeach
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</section>
 
-    {{-- 4. SERVICES --}}
-    <div class="container my-5">
+{{-- ===== 4. SERVICES ===== --}}
+<section class="section-padding">
+    <div class="container">
         <div class="text-center mb-5">
-            <h2 class="fw-bold">We Offer Best Services</h2>
-        </div>
-        <div class="row g-4 text-center px-lg-5">
-            <div class="col-md-4">
-                <div class="card h-100 border p-4 shadow-sm rounded-4">
-                    <div class="mb-3"><i class="fa-solid fa-shield-halved fa-2x text-success"></i></div>
-                    <p class="small text-muted mb-0">All our buses undergo thorough sanitization and are tracked via GPS, providing you with peace of mind throughout your journey in Calabarzon.</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card h-100 border p-4 shadow-sm rounded-4">
-                    <div class="mb-3"><i class="fa-solid fa-bolt fa-2x text-warning"></i></div>
-                    <p class="small text-muted mb-0">Our system offers Instant Booking, ensuring you receive your digital e-ticket immediately after payment, allowing you to secure your seat in seconds.</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card h-100 border p-4 shadow-sm rounded-4">
-                    <div class="mb-3"><i class="fa-solid fa-headset fa-2x text-dark"></i></div>
-                    <p class="small text-muted mb-0">Our dedicated 24/7 Support team is ready to help you anytime, anywhere, ensuring a smooth and worry-free experience from booking to arrival.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- 5. TOP DESTINATIONS --}}
-    <div class="container my-5">
-        <div class="text-center mb-5">
-            <h2 class="fw-bold">Top Destinations In<br>Calabarzon</h2>
+            <h2 class="section-title">We Offer Best Services</h2>
+            <p class="section-subtitle">Experience hassle-free travel with our top-notch amenities and support</p>
         </div>
         <div class="row g-4 justify-content-center">
-            <div class="col-md-3">
-                <div class="card shadow-sm border-0 rounded-4 overflow-hidden h-100">
-                    <img src="{{ asset('images/taal.png') }}" class="card-img-top" style="height: 150px; object-fit: cover;">
-                    <div class="card-body text-center p-2">
-                        <p class="small fw-bold mb-0">Taal Volcano</p>
+            <div class="col-md-4">
+                <div class="service-card h-100">
+                    <div class="service-icon amber">
+                        <i class="fa-solid fa-shield-halved"></i>
                     </div>
+                    <h5 class="service-title">Safe & Sanitized</h5>
+                    <p class="text-muted mb-0">All our buses undergo thorough sanitization and are tracked via GPS, providing you with peace of mind throughout your journey in Calabarzon.</p>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card shadow-sm border-0 rounded-4 overflow-hidden h-100">
-                    <img src="{{ asset('images/laguna.png') }}" class="card-img-top" style="height: 150px; object-fit: cover;">
-                    <div class="card-body text-center p-2">
-                        <p class="small fw-bold mb-0">Pagsanjan Falls</p>
+            <div class="col-md-4">
+                <div class="service-card h-100">
+                    <div class="service-icon amber">
+                        <i class="fa-solid fa-bolt"></i>
                     </div>
+                    <h5 class="service-title">Instant Booking</h5>
+                    <p class="text-muted mb-0">Our system offers instant booking, ensuring you receive your digital e-ticket immediately after payment, allowing you to secure your seat in seconds.</p>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card shadow-sm border-0 rounded-4 overflow-hidden h-100">
-                    <img src="{{ asset('images/cavite.png') }}" class="card-img-top" style="height: 150px; object-fit: cover;">
-                    <div class="card-body text-center p-2">
-                        <p class="small fw-bold mb-0">Tagaytay City</p>
+            <div class="col-md-4">
+                <div class="service-card h-100">
+                    <div class="service-icon amber">
+                        <i class="fa-solid fa-headset"></i>
                     </div>
+                    <h5 class="service-title">24/7 Support</h5>
+                    <p class="text-muted mb-0">Our dedicated support team is ready to help you anytime, anywhere, ensuring a smooth and worry-free experience from booking to arrival.</p>
                 </div>
             </div>
         </div>
     </div>
+</section>
 
-    {{-- 6. THREE STEPS --}}
-    <div class="container my-5 pb-5">
-        <h2 class="fw-bold mb-5 ms-lg-5 ps-lg-5">Book Your Next Trip<br>In 3 Easy Steps</h2>
-        <div class="row align-items-center">
-            <div class="col-md-6 ps-lg-5 ms-lg-5">
-                <div class="d-flex mb-4">
-                    <div class="me-3">
-                        <div class="step-icon-box" style="background-color: #f1c40f;"><i class="fa-regular fa-map"></i></div>
-                    </div>
-                    <div>
-                        <h6 class="fw-bold mb-1">Select Your Trip</h6>
-                        <p class="small text-muted">Select Your Trip Choose your origin (departure point) and destination within the Calabarzon region, then pick your travel date and preferred time.</p>
-                    </div>
-                </div>
-                <div class="d-flex mb-4">
-                    <div class="me-3">
-                        <div class="step-icon-box" style="background-color: #ff6b6b;"><i class="fa-solid fa-chair"></i></div>
-                    </div>
-                    <div>
-                        <h6 class="fw-bold mb-1">Secure Your Seat</h6>
-                        <p class="small text-muted">Secure Your Seat Instantly Select your seat on the bus layout and complete the payment. You will receive your e-ticket immediately after payment confirmation.</p>
-                    </div>
-                </div>
-                <div class="d-flex">
-                    <div class="me-3">
-                        <div class="step-icon-box" style="background-color: #1abc9c;"><i class="fa-solid fa-bus-simple"></i></div>
-                    </div>
-                    <div>
-                        <h6 class="fw-bold mb-1">Hop on & Travel Safely</h6>
-                        <p class="small text-muted">Hop On & Travel Safely Present your e-ticket (digital or printed) at the terminal. Enjoy your safe, sanitized, and GPS-tracked ride to your destination.</p>
+{{-- ===== 5. TOP DESTINATIONS ===== --}}
+<section class="section-padding bg-light">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">Top Destinations in Calabarzon</h2>
+            <p class="section-subtitle">Explore the most beautiful places in the region</p>
+        </div>
+        <div class="row g-4 justify-content-center">
+            <div class="col-md-4">
+                <div class="destination-card">
+                    <img src="{{ asset('images/taal.png') }}" alt="Taal Volcano">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Taal Volcano</h5>
+                        <p class="text-muted small mb-0">Batangas</p>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4 position-relative">
-                <img src="https://placehold.co/400x500/f3e5f5/4a148c?text=Step+Image" class="img-fluid rounded-3 shadow border border-white border-4" style="transform: rotate(-5deg); z-index: 1;">
+            <div class="col-md-4">
+                <div class="destination-card">
+                    <img src="{{ asset('images/laguna.png') }}" alt="Pagsanjan Falls">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Pagsanjan Falls</h5>
+                        <p class="text-muted small mb-0">Laguna</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="destination-card">
+                    <img src="{{ asset('images/cavite.png') }}" alt="Tagaytay City">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Tagaytay City</h5>
+                        <p class="text-muted small mb-0">Cavite</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+</section>
+
+{{-- ===== 6. STEPS SECTION ===== --}}
+<section class="section-padding steps-section">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+                <h2 class="section-title mb-5">Book Your Next Trip<br>In 3 Easy Steps</h2>
+
+                <div class="step-item">
+                    <div class="step-icon amber">
+                        <i class="fa-regular fa-map"></i>
+                    </div>
+                    <div>
+                        <h5 class="step-title">Select Your Trip</h5>
+                        <p class="step-text">Choose your origin and destination within the Calabarzon region, then pick your travel date and preferred time.</p>
+                    </div>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-icon navy">
+                        <i class="fa-solid fa-chair"></i>
+                    </div>
+                    <div>
+                        <h5 class="step-title">Secure Your Seat</h5>
+                        <p class="step-text">Select your seat on the bus layout and complete the payment. You'll receive your e-ticket immediately after confirmation.</p>
+                    </div>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-icon success">
+                        <i class="fa-solid fa-bus-simple"></i>
+                    </div>
+                    <div>
+                        <h5 class="step-title">Hop on & Travel Safely</h5>
+                        <p class="step-text">Present your e-ticket at the terminal. Enjoy your safe, sanitized, and GPS-tracked ride to your destination.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6 text-center">
+                <div class="phone-mockup">
+                    <img src="https://placehold.co/260x500/1E293B/FFC107?text=Southern+Lines+App" alt="Mobile App Preview">
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
 </div> {{-- END OF MAIN CONTENT WRAPPER --}}
 
 {{-- 7. JAVASCRIPT LOGIC --}}
+@push('scripts')
+<script src="{{ asset('js/welcome.js') }}"></script>
+
+{{-- Leaflet JS --}}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+
 <script>
-    function toggleLayout(isRoundTrip) {
-        const returnRow = document.getElementById('returnRow');
-        const retOrigin = document.querySelector('select[name="return_origin"]');
-        const retDest = document.querySelector('select[name="return_destination"]');
-        const retDate = document.querySelector('input[name="return_date"]');
+    const terminals = @json($terminals);
+    let map, markers = [],
+        routingControl = null;
 
-        returnRow.style.display = isRoundTrip ? 'flex' : 'none';
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize map centered on Calabarzon
+        map = L.map('map').setView([14.1407, 121.4692], 9);
 
-        if (isRoundTrip) {
-            returnRow.classList.add('animate__animated', 'animate__fadeIn');
-            retOrigin.setAttribute('required', 'required');
-            retDest.setAttribute('required', 'required');
-            retDate.setAttribute('required', 'required');
-        } else {
-            retOrigin.removeAttribute('required');
-            retDest.removeAttribute('required');
-            retDate.removeAttribute('required');
+        // Add OpenStreetMap tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+        // Add markers for each terminal
+        const bounds = L.latLngBounds();
+        terminals.forEach(terminal => {
+            if (terminal.latitude && terminal.longitude) {
+                const lat = parseFloat(terminal.latitude);
+                const lng = parseFloat(terminal.longitude);
+
+                const marker = L.marker([lat, lng]).addTo(map);
+                marker.bindPopup(`
+                    <div style="min-width:150px;">
+                        <strong>${terminal.name}</strong><br>
+                        <small class="text-muted">${terminal.city}, ${terminal.province || ''}</small>
+                    </div>
+                `);
+                marker.terminalData = terminal;
+                markers.push(marker);
+                bounds.extend([lat, lng]);
+            }
+        });
+
+        // Fit map to show all markers
+        if (markers.length > 0) {
+            map.fitBounds(bounds, {
+                padding: [30, 30]
+            });
         }
-    }
+
+        // Terminal list click handler
+        document.querySelectorAll('.terminal-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.terminal-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+
+                const lat = parseFloat(this.dataset.lat);
+                const lng = parseFloat(this.dataset.lng);
+                const terminalId = parseInt(this.dataset.terminalId);
+
+                map.setView([lat, lng], 14);
+
+                // Open popup for clicked terminal
+                const marker = markers.find(m => m.terminalData.id === terminalId);
+                if (marker) marker.openPopup();
+            });
+        });
+
+        // Show Route button
+        document.getElementById('showRouteBtn').addEventListener('click', function() {
+            const origin = document.getElementById('originSelect');
+            const dest = document.getElementById('destinationSelect');
+
+            if (!origin.value || !dest.value) {
+                alert('Please select both terminals.');
+                return;
+            }
+            if (origin.value === dest.value) {
+                alert('Origin and destination cannot be the same.');
+                return;
+            }
+
+            const oOpt = origin.options[origin.selectedIndex];
+            const dOpt = dest.options[dest.selectedIndex];
+
+            const oLat = parseFloat(oOpt.dataset.lat);
+            const oLng = parseFloat(oOpt.dataset.lng);
+            const dLat = parseFloat(dOpt.dataset.lat);
+            const dLng = parseFloat(dOpt.dataset.lng);
+
+            // Remove existing route
+            if (routingControl) {
+                map.removeControl(routingControl);
+            }
+
+            // Add new route
+            routingControl = L.Routing.control({
+                waypoints: [
+                    L.latLng(oLat, oLng),
+                    L.latLng(dLat, dLng)
+                ],
+                routeWhileDragging: false,
+                showAlternatives: false,
+                fitSelectedRoutes: true,
+                lineOptions: {
+                    styles: [{
+                        color: '#0d6efd',
+                        weight: 5,
+                        opacity: 0.8
+                    }]
+                },
+                createMarker: function() {
+                    return null;
+                } // Use existing markers
+            }).addTo(map);
+
+            // Listen for route found event
+            routingControl.on('routesfound', function(e) {
+                const route = e.routes[0];
+                const distance = (route.summary.totalDistance / 1000).toFixed(1) + ' km';
+                const duration = Math.round(route.summary.totalTime / 60) + ' mins';
+
+                document.getElementById('routeDistance').textContent = distance;
+                document.getElementById('routeDuration').textContent = duration;
+                document.getElementById('routeSummary').textContent = route.name || 'Via main road';
+                document.getElementById('routeInfo').classList.add('show');
+            });
+        });
+
+        // Clear Route button
+        document.getElementById('clearRouteBtn').addEventListener('click', function() {
+            if (routingControl) {
+                map.removeControl(routingControl);
+                routingControl = null;
+            }
+            document.getElementById('routeInfo').classList.remove('show');
+            document.getElementById('originSelect').value = '';
+            document.getElementById('destinationSelect').value = '';
+
+            // Reset map view
+            if (markers.length > 0) {
+                const bounds = L.latLngBounds();
+                markers.forEach(m => bounds.extend(m.getLatLng()));
+                map.fitBounds(bounds, {
+                    padding: [30, 30]
+                });
+            }
+        });
+    });
 </script>
+@endpush
 
 @endsection

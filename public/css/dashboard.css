@@ -1,0 +1,20 @@
+/* ==============================================
+   DASHBOARD.CSS - Admin Dashboard Styles
+   ============================================== */
+
+/* Dashboard Stat Cards */
+.card-revenue {
+    background: linear-gradient(45deg, #11998e, #38ef7d);
+}
+
+.card-bookings {
+    background: linear-gradient(45deg, #3a7bd5, #00d2ff);
+}
+
+.card-trips {
+    background: linear-gradient(45deg, #ff8008, #ffc837);
+}
+
+.card-users {
+    background: linear-gradient(45deg, #8e2de2, #4a00e0);
+}
