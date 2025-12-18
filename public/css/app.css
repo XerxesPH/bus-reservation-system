@@ -1,0 +1,57 @@
+/* ==============================================
+   APP.CSS - Global Layout Styles
+   ============================================== */
+
+/* 1. Body & Typography */
+body {
+    font-family: "Poppins", sans-serif;
+    padding-top: 0 !important;
+}
+
+/* 2. Navbar Layout & Animation */
+.navbar {
+    transition: background-color 0.3s ease;
+    padding: 1rem 2rem;
+}
+
+/* 3. Nav Links Styling */
+.nav-link {
+    color: #000 !important;
+    font-weight: 500;
+    font-size: 0.9rem;
+    margin: 0 10px;
+}
+
+.nav-link:hover {
+    color: #f4a261 !important;
+}
+
+/* 4. User Icon Styling */
+.user-icon-btn {
+    font-size: 2rem;
+    color: #000;
+    line-height: 1;
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+.user-icon-btn:hover {
+    color: #f4a261;
+}
+
+/* 5. Logo Image */
+.logo-img {
+    height: 50px;
+    width: auto;
+}
+
+/* 6. Main Content Padding */
+.main-content-wrapper {
+    padding-top: 100px;
+}
+
+/* 7. Auth Pages - Reduced padding for login/register */
+.main-content-auth {
+    padding-top: 80px;
+}

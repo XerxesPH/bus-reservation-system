@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Booking;
 use App\Models\Bus;
 use App\Models\Schedule;
 use App\Models\Terminal;
@@ -12,299 +13,358 @@ use Illuminate\Support\Facades\DB;
 
 class DatabaseSeeder extends Seeder
 {
+    /**
+     * Calabarzon Terminal Locations for Mesh Network
+     */
+    private array $locations = [
+        'PITX (Parañaque)',
+        'Buendia (Pasay)',
+        'Batangas City Grand Terminal',
+        'Lipa City',
+        'Calamba City',
+        'San Pablo City',
+        'Lucena Grand Terminal',
+        'Sta. Cruz, Laguna',
+        'Tagaytay City',
+        'Nasugbu, Batangas',
+    ];
+
+    /**
+     * Terminal coordinates for distance calculation
+     */
+    private array $coordinates = [
+        'PITX (Parañaque)' => ['lat' => 14.5093, 'lng' => 120.9918],
+        'Buendia (Pasay)' => ['lat' => 14.5543, 'lng' => 120.9972],
+        'Batangas City Grand Terminal' => ['lat' => 13.7845, 'lng' => 121.0744],
+        'Lipa City' => ['lat' => 13.9427, 'lng' => 121.1648],
+        'Calamba City' => ['lat' => 14.1923, 'lng' => 121.1345],
+        'San Pablo City' => ['lat' => 14.0688, 'lng' => 121.3236],
+        'Lucena Grand Terminal' => ['lat' => 13.9575, 'lng' => 121.6022],
+        'Sta. Cruz, Laguna' => ['lat' => 14.2758, 'lng' => 121.4132],
+        'Tagaytay City' => ['lat' => 14.1153, 'lng' => 120.9619],
+        'Nasugbu, Batangas' => ['lat' => 14.0722, 'lng' => 120.6322],
+    ];
+
+    /**
+     * Daily departure timeslots
+     */
+    private array $timeslots = ['06:00:00', '12:00:00', '18:00:00'];
+
     public function run(): void
     {
-        // Clear tables to prevent duplicates when reseeding
-        // DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        // Terminal::truncate();
-        // Bus::truncate();
-        // Schedule::truncate();
-        // DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        $this->command->info('🚌 Southern Lines Bus Reservation System - Database Seeder');
+        $this->command->info('=========================================================');
 
         // ==========================================
-        // 1. CREATE TERMINALS (CALABARZON FOCUSED)
+        // 1. CREATE TERMINALS (CALABARZON NETWORK)
         // ==========================================
-        $terminalsData = [
-            // --- METRO MANILA HUBS (Gateways) ---
-            'PITX' => [
-                'city' => 'Parañaque',
-                'name' => 'PITX (Parañaque Integrated Terminal)',
-                'province' => 'Metro Manila',
-                'type' => 'integrated_terminal',
-                'latitude' => 14.5093,
-                'longitude' => 120.9918
-            ],
-            'Buendia' => [
-                'city' => 'Pasay',
-                'name' => 'DLTB Buendia Terminal',
-                'province' => 'Metro Manila',
-                'type' => 'private_terminal',
-                'latitude' => 14.5543,
-                'longitude' => 120.9972
-            ],
+        $this->command->info('📍 Creating Terminals...');
+        $terminals = $this->seedTerminals();
 
-            // --- LAGUNA ---
-            'SanPablo' => [
-                'city' => 'San Pablo City',
-                'name' => 'San Pablo City Central Terminal',
-                'province' => 'Laguna',
-                'type' => 'integrated_terminal',
-                'latitude' => 14.0688,
-                'longitude' => 121.3236
-            ],
-            'Turbina' => [
-                'city' => 'Calamba City',
-                'name' => 'Turbina Bus Terminal',
-                'province' => 'Laguna',
-                'type' => 'integrated_terminal',
-                'latitude' => 14.1923,
-                'longitude' => 121.1345
-            ],
-            'SantaRosa' => [
-                'city' => 'Santa Rosa City',
-                'name' => 'SRIT (Balibago Complex)',
-                'province' => 'Laguna',
-                'type' => 'integrated_terminal',
-                'latitude' => 14.2936,
-                'longitude' => 121.1037
-            ],
-            'SantaCruz' => [
-                'city' => 'Santa Cruz',
-                'name' => 'Santa Cruz / Pagsanjan Terminal',
-                'province' => 'Laguna',
-                'type' => 'integrated_terminal',
-                'latitude' => 14.2758,
-                'longitude' => 121.4132
-            ],
+        // ==========================================
+        // 2. CREATE BUS FLEET
+        // ==========================================
+        $this->command->info('🚌 Creating Bus Fleet...');
+        $buses = $this->seedBuses();
 
-            // --- BATANGAS ---
-            'BatangasCity' => [
-                'city' => 'Batangas City',
-                'name' => 'Batangas City Grand Terminal',
-                'province' => 'Batangas',
-                'type' => 'integrated_terminal',
-                'latitude' => 13.7845,
-                'longitude' => 121.0744
-            ],
-            'BatangasPier' => [
-                'city' => 'Batangas City',
-                'name' => 'Batangas Port (Pier)',
-                'province' => 'Batangas',
-                'type' => 'integrated_terminal',
-                'latitude' => 13.7601,
-                'longitude' => 121.0478
-            ],
-            'Lipa' => [
-                'city' => 'Lipa City',
-                'name' => 'SM City Lipa Terminal',
-                'province' => 'Batangas',
-                'type' => 'mall_terminal',
-                'latitude' => 13.9427,
-                'longitude' => 121.1648
-            ],
-            'Nasugbu' => [
-                'city' => 'Nasugbu',
-                'name' => 'Nasugbu BSC Terminal',
-                'province' => 'Batangas',
-                'type' => 'private_terminal',
-                'latitude' => 14.0722,
-                'longitude' => 120.6322
-            ],
+        // ==========================================
+        // 3. GENERATE MESH NETWORK SCHEDULES
+        // ==========================================
+        $this->command->info('📅 Generating Mesh Network Schedules (All Routes)...');
+        $this->seedMeshSchedules($terminals, $buses);
 
-            // --- CAVITE ---
-            'Tagaytay' => [
-                'city' => 'Tagaytay City',
-                'name' => 'Tagaytay Olivarez Plaza',
-                'province' => 'Cavite',
-                'type' => 'integrated_terminal',
-                'latitude' => 14.1153,
-                'longitude' => 120.9619
-            ],
-            'Dasma' => [
-                'city' => 'Dasmariñas',
-                'name' => 'Robinsons Pala-Pala',
-                'province' => 'Cavite',
-                'type' => 'mall_terminal',
-                'latitude' => 14.3015,
-                'longitude' => 120.9631
-            ],
+        // ==========================================
+        // 4. CREATE USERS
+        // ==========================================
+        $this->command->info('👤 Creating Users...');
+        $users = $this->seedUsers();
 
-            // --- QUEZON ---
-            'Lucena' => [
-                'city' => 'Lucena City',
-                'name' => 'Lucena Grand Central',
-                'province' => 'Quezon',
-                'type' => 'integrated_terminal',
-                'latitude' => 13.9575,
-                'longitude' => 121.6022
-            ],
-            'Mauban' => [
-                'city' => 'Mauban',
-                'name' => 'Mauban JAC Liner',
-                'province' => 'Quezon',
-                'type' => 'private_terminal',
-                'latitude' => 14.1884,
-                'longitude' => 121.7297
-            ],
-        ];
+        // ==========================================
+        // 5. CREATE SAMPLE BOOKINGS
+        // ==========================================
+        $this->command->info('🎫 Creating Sample Bookings...');
+        $this->seedBookings($users);
 
-        // Store terminal objects
-        $t = [];
-        foreach ($terminalsData as $key => $data) {
-            // Check if terminal exists to avoid duplicate errors if reseeding
-            $t[$key] = Terminal::firstOrCreate(
-                ['name' => $data['name']], // Check by name
-                $data // Create with data if not found
+        $this->command->info('✅ Seeding Complete!');
+    }
+
+    /**
+     * Seed Terminals
+     */
+    private function seedTerminals(): array
+    {
+        $terminals = [];
+
+        foreach ($this->locations as $location) {
+            $coords = $this->coordinates[$location] ?? ['lat' => 14.0, 'lng' => 121.0];
+
+            // Parse city and province from location name
+            $parts = explode(',', $location);
+            $city = trim($parts[0]);
+            $province = isset($parts[1]) ? trim($parts[1]) : $this->getProvince($location);
+
+            $terminals[$location] = Terminal::updateOrCreate(
+                ['name' => $location],
+                [
+                    'city' => $city,
+                    'province' => $province,
+                    'type' => 'integrated_terminal',
+                    'latitude' => $coords['lat'],
+                    'longitude' => $coords['lng'],
+                ]
             );
         }
 
-        // ==========================================
-        // 2. DEFINE ROUTES (CALABARZON NETWORK)
-        // ==========================================
-        // Format: [Origin, Destination, Duration(Hrs), Price, RegularCount, DeluxeCount]
+        $this->command->info("   Created " . count($terminals) . " terminals");
+        return $terminals;
+    }
 
-        $routes = [
-            // --- 1. THE MANILA COMMUTE (North-South Backbone) ---
-            ['PITX',         'BatangasCity', 2.5, 280,  3, 2],
-            ['PITX',         'Lucena',       4,   420,  3, 2],
-            ['Buendia',      'SantaRosa',    1,   120,  4, 0], // Commuter route
-            ['Buendia',      'SantaCruz',    3,   250,  2, 1],
-            ['PITX',         'Nasugbu',      3.5, 350,  2, 2], // Beach route
-            ['PITX',         'Tagaytay',     2,   180,  3, 1], // Tourist route
-
-            // --- 2. LAGUNA HUB (San Pablo & Turbina) ---
-            ['SanPablo',     'PITX',         2.5, 230,  3, 1],
-            ['SanPablo',     'Lucena',       1.5, 120,  3, 0], // Short hop
-            ['Turbina',      'BatangasPier', 1.5, 150,  2, 2], // Ferry connector
-            ['Turbina',      'Lipa',         0.8, 80,   4, 0], // Short hop
-
-            // --- 3. BATANGAS ROUTES ---
-            ['BatangasCity', 'Lipa',         0.8, 90,   4, 0],
-            ['BatangasPier', 'PITX',         2.5, 290,  2, 2], // Direct from Pier
-            ['Lipa',         'SanPablo',     1,   100,  3, 0],
-
-            // --- 4. CAVITE CONNECTORS ---
-            ['Dasma',        'Tagaytay',     0.8, 60,   5, 0], // Jeep/Bus route
-            ['Dasma',        'PITX',         1,   80,   5, 0],
-            ['Tagaytay',     'Nasugbu',      1.5, 120,  2, 0],
-
-            // --- 5. QUEZON PROVINCE ---
-            ['Lucena',       'Mauban',       1.5, 100,  2, 0], // Gateway to Cagbalete
-            ['Lucena',       'Buendia',      4,   420,  2, 2],
+    /**
+     * Get province from location name
+     */
+    private function getProvince(string $location): string
+    {
+        $provinces = [
+            'PITX' => 'Metro Manila',
+            'Buendia' => 'Metro Manila',
+            'Batangas' => 'Batangas',
+            'Lipa' => 'Batangas',
+            'Calamba' => 'Laguna',
+            'San Pablo' => 'Laguna',
+            'Lucena' => 'Quezon',
+            'Sta. Cruz' => 'Laguna',
+            'Tagaytay' => 'Cavite',
+            'Nasugbu' => 'Batangas',
         ];
 
-        // ==========================================
-        // 3. GENERATE FLEET & SCHEDULES
-        // ==========================================
-        $daysToCheck = 7; // Generate for 1 week
-        $busCounter = 8000; // Start plate numbers at 8000
+        foreach ($provinces as $key => $province) {
+            if (str_contains($location, $key)) {
+                return $province;
+            }
+        }
+        return 'Calabarzon';
+    }
 
-        foreach ($routes as $routeCfg) {
-            [$originKey, $destKey, $duration, $price, $regCount, $dlxCount] = $routeCfg;
+    /**
+     * Seed Bus Fleet
+     */
+    private function seedBuses(): array
+    {
+        $buses = [];
+        $busNumber = 1001;
 
-            // Safety check: ensure keys exist
-            if (!isset($t[$originKey]) || !isset($t[$destKey])) continue;
-
-            $origin = $t[$originKey];
-            $dest = $t[$destKey];
-
-            // 3a. Create Fleet
-            $fleet = [];
-
-            // Create Regular Buses (Capacity 45 for provincial)
-            for ($i = 0; $i < $regCount; $i++) {
-                $fleet[] = Bus::firstOrCreate(['code' => 'REG-' . $busCounter++], [
+        // Create Regular Buses
+        for ($i = 0; $i < 15; $i++) {
+            $buses[] = Bus::updateOrCreate(
+                ['code' => 'REG-' . $busNumber],
+                [
                     'type' => 'regular',
-                    'capacity' => 40,
-                ]);
-            }
-            // Create Deluxe Buses (Capacity 29 for leg room)
-            for ($i = 0; $i < $dlxCount; $i++) {
-                $fleet[] = Bus::firstOrCreate(['code' => 'DLX-' . $busCounter++], [
+                    'capacity' => 45,
+                ]
+            );
+            $busNumber++;
+        }
+
+        // Create Deluxe Buses
+        for ($i = 0; $i < 10; $i++) {
+            $buses[] = Bus::updateOrCreate(
+                ['code' => 'DLX-' . $busNumber],
+                [
                     'type' => 'deluxe',
-                    'capacity' => 20,
-                ]);
-            }
+                    'capacity' => 30,
+                ]
+            );
+            $busNumber++;
+        }
 
-            // 3b. Smart Rotation Schedule
-            for ($day = 0; $day < $daysToCheck; $day++) {
-                $date = Carbon::today()->addDays($day)->format('Y-m-d');
-                $isEvenDay = ($day % 2 == 0);
+        $this->command->info("   Created " . count($buses) . " buses");
+        return $buses;
+    }
 
-                foreach ($fleet as $index => $bus) {
-                    // Stagger departures (start at 4 AM for early commuters)
-                    $baseTime = 4 + ($index * 1.5); // 1.5 hour gaps
+    /**
+     * Seed Mesh Network Schedules
+     * Creates routes between ALL terminal pairs (fully connected network)
+     */
+    private function seedMeshSchedules(array $terminals, array $buses): void
+    {
+        $daysAhead = 14; // Generate schedules for 2 weeks
+        $scheduleCount = 0;
+        $busIndex = 0;
+        $totalBuses = count($buses);
 
-                    if ($baseTime >= 20) $baseTime = 4; // Reset if too late
+        // ==========================================
+        // MESH NETWORK: Every Origin to Every Destination
+        // ==========================================
+        foreach ($this->locations as $originName) {
+            foreach ($this->locations as $destName) {
+                // Skip if origin === destination (bus can't go to itself)
+                if ($originName === $destName) {
+                    continue;
+                }
 
-                    $depTime = sprintf('%02d:00:00', floor($baseTime));
-                    $minutes = ($baseTime - floor($baseTime)) * 60;
-                    $depTime = sprintf('%02d:%02d:00', floor($baseTime), $minutes);
+                $origin = $terminals[$originName];
+                $dest = $terminals[$destName];
 
-                    if ($duration < 6) {
-                        // --- SAME DAY RETURN (Most CALABARZON trips are short) ---
-                        // Leg 1: Origin -> Dest
-                        $this->createTrip($bus, $origin, $dest, $date, $depTime, $price);
+                // Calculate price based on distance
+                $distance = $this->calculateDistance(
+                    $this->coordinates[$originName]['lat'],
+                    $this->coordinates[$originName]['lng'],
+                    $this->coordinates[$destName]['lat'],
+                    $this->coordinates[$destName]['lng']
+                );
 
-                        // Leg 2: Dest -> Origin (Turnaround)
-                        $returnHour = $baseTime + $duration + 1; // +1 hr prep time
-                        if ($returnHour < 22) {
-                            $returnTime = sprintf('%02d:%02d:00', floor($returnHour), ($returnHour - floor($returnHour)) * 60);
-                            $this->createTrip($bus, $dest, $origin, $date, $returnTime, $price);
-                        }
-                    } else {
-                        // --- LONG HAUL (Next Day Return) ---
-                        // Swap start points based on day to simulate bus rotation
-                        $startAtOrigin = ($isEvenDay && $index % 2 == 0) || (! $isEvenDay && $index % 2 != 0);
+                // Price: ~₱3-5 per km, minimum ₱80
+                $basePrice = max(80, round($distance * rand(3, 5)));
 
-                        if ($startAtOrigin) {
-                            $this->createTrip($bus, $origin, $dest, $date, $depTime, $price);
-                        } else {
-                            $this->createTrip($bus, $dest, $origin, $date, $depTime, $price);
-                        }
+                // Travel time: ~1 hour per 40km, between 1-4 hours
+                $travelHours = max(1, min(4, round($distance / 40, 1)));
+
+                // Generate schedules for each day
+                for ($day = 0; $day < $daysAhead; $day++) {
+                    $date = Carbon::today()->addDays($day)->format('Y-m-d');
+
+                    // 3 daily departures per route
+                    foreach ($this->timeslots as $time) {
+                        // Rotate through buses
+                        $bus = $buses[$busIndex % $totalBuses];
+                        $busIndex++;
+
+                        // Deluxe buses get 25% price markup
+                        $price = $bus->type === 'deluxe'
+                            ? round($basePrice * 1.25)
+                            : $basePrice;
+
+                        Schedule::updateOrCreate(
+                            [
+                                'origin_id' => $origin->id,
+                                'destination_id' => $dest->id,
+                                'departure_date' => $date,
+                                'departure_time' => $time,
+                            ],
+                            [
+                                'bus_id' => $bus->id,
+                                'price' => $price,
+                                'status' => 'scheduled',
+                            ]
+                        );
+                        $scheduleCount++;
                     }
                 }
             }
         }
 
-        // ==========================================
-        // 4. CREATE TEST USER
-        // ==========================================
-        User::firstOrCreate(
-            ['email' => 'test@example.com'],
+        // Calculate route count: n * (n-1) where n = number of locations
+        $routeCount = count($this->locations) * (count($this->locations) - 1);
+        $this->command->info("   Created {$routeCount} unique routes");
+        $this->command->info("   Created {$scheduleCount} total schedules ({$daysAhead} days × 3 timeslots)");
+    }
+
+    /**
+     * Calculate distance between two coordinates (Haversine formula)
+     */
+    private function calculateDistance(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        $earthRadius = 6371; // km
+
+        $latDelta = deg2rad($lat2 - $lat1);
+        $lngDelta = deg2rad($lng2 - $lng1);
+
+        $a = sin($latDelta / 2) * sin($latDelta / 2) +
+            cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+            sin($lngDelta / 2) * sin($lngDelta / 2);
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $earthRadius * $c;
+    }
+
+    /**
+     * Seed Users
+     */
+    private function seedUsers(): array
+    {
+        $users = [];
+
+        // Admin User
+        $users['admin'] = User::updateOrCreate(
+            ['email' => 'admin@southernlines.ph'],
             [
-                'name' => 'Student Admin',
+                'name' => 'System Administrator',
                 'password' => bcrypt('password'),
-                'role' => 'admin' // Assuming you have a role column
+                'role' => 'admin',
             ]
         );
 
-        User::firstOrCreate(
+        // Test Passenger
+        $users['passenger'] = User::updateOrCreate(
             ['email' => 'passenger@example.com'],
             [
                 'name' => 'Juan Dela Cruz',
                 'password' => bcrypt('password'),
-                'role' => 'user'
+                'role' => 'user',
+                'contact_number' => '09171234567',
             ]
         );
+
+        // Additional test user
+        $users['test'] = User::updateOrCreate(
+            ['email' => 'test@example.com'],
+            [
+                'name' => 'Test User',
+                'password' => bcrypt('password'),
+                'role' => 'user',
+            ]
+        );
+
+        $this->command->info("   Created " . count($users) . " users");
+        return $users;
     }
 
-    private function createTrip($bus, $origin, $dest, $date, $time, $price)
+    /**
+     * Seed Sample Bookings
+     */
+    private function seedBookings(array $users): void
     {
-        // Adjust price for Deluxe (+20%)
-        if ($bus->type === 'deluxe') {
-            $price = $price * 1.25; // 25% markup for deluxe
+        // Get some random schedules for sample bookings
+        $schedules = Schedule::where('departure_date', '>=', Carbon::today())
+            ->take(5)
+            ->get();
+
+        if ($schedules->isEmpty()) {
+            $this->command->warn("   No schedules available for sample bookings");
+            return;
         }
 
-        Schedule::firstOrCreate([
-            'bus_id' => $bus->id,
-            'departure_date' => $date,
-            'departure_time' => $time,
-        ], [
-            'origin_id' => $origin->id,
-            'destination_id' => $dest->id,
-            'price' => round($price, 2), // Round to 2 decimals
-            'status' => 'scheduled' // Assuming you have a status column
-        ]);
+        $bookingCount = 0;
+        $passenger = $users['passenger'];
+
+        foreach ($schedules as $index => $schedule) {
+            $seatNumbers = [$index + 1, $index + 2]; // 2 seats per booking
+
+            Booking::updateOrCreate(
+                [
+                    'user_id' => $passenger->id,
+                    'schedule_id' => $schedule->id,
+                ],
+                [
+                    'booking_reference' => Booking::generateReference(),
+                    'bus_number' => $schedule->bus->code ?? 'N/A',
+                    'seat_numbers' => $seatNumbers,
+                    'adults' => 2,
+                    'children' => 0,
+                    'total_price' => $schedule->price * 2,
+                    'status' => 'confirmed',
+                    'guest_name' => $passenger->name,
+                    'guest_email' => $passenger->email,
+                    'guest_phone' => $passenger->contact_number ?? '09171234567',
+                    'payment_method' => 'GCash',
+                    'payment_status' => 'paid',
+                    'trip_type' => 'oneway',
+                ]
+            );
+            $bookingCount++;
+        }
+
+        $this->command->info("   Created {$bookingCount} sample bookings");
     }
 }

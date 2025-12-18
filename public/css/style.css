@@ -1,0 +1,442 @@
+/* ==============================================
+   STYLE.CSS - Global Shared Styles
+   ============================================== */
+
+/* 1. Typography & Base */
+body {
+    font-family: "Poppins", sans-serif;
+}
+
+h1,
+h2,
+h3,
+.serif-font {
+    font-family: "Playfair Display", serif;
+    color: #1a1a2e;
+}
+
+/* 2. Text Utilities */
+.underline-red {
+    text-decoration: underline;
+    text-decoration-color: #e74c3c;
+    text-decoration-thickness: 3px;
+}
+
+/* 3. Custom Buttons */
+.btn-yellow {
+    background-color: #f1c40f;
+    color: #fff;
+    border-radius: 4px;
+    padding: 10px 25px;
+    font-weight: 600;
+    border: none;
+    transition: all 0.3s;
+}
+
+.btn-yellow:hover {
+    background-color: #d4ac0d;
+    color: #fff;
+}
+
+.btn-light-purple {
+    background-color: #b5bcf5;
+    color: #333;
+    font-weight: 700;
+    border-radius: 20px;
+    padding: 10px 50px;
+    border: 1px solid #a0abf0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s;
+}
+
+.btn-light-purple:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 4. Form Inputs (Booking Forms) */
+.custom-input-group {
+    background-color: #eef0f2;
+    border-radius: 10px;
+    padding: 5px 15px;
+    margin-bottom: 0;
+    border: 1px solid #dee2e6;
+}
+
+.custom-input-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #666;
+    margin-bottom: 0;
+    text-transform: uppercase;
+}
+
+.custom-input-field {
+    background: transparent;
+    border: none;
+    width: 100%;
+    font-weight: 600;
+    color: #333;
+    padding: 0;
+}
+
+.custom-input-field:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+/* 5. Location Pills */
+.location-pill {
+    display: block;
+    padding: 8px;
+    margin-bottom: 5px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #555;
+    text-align: center;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: all 0.2s;
+}
+
+.location-pill:hover,
+.location-pill.active {
+    background-color: #faebd7;
+    border: 1px solid #e0c090;
+    border-radius: 15px;
+    color: #333;
+}
+
+/* 6. Step Icon Boxes */
+.step-icon-box {
+    width: 45px;
+    height: 45px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+}
+
+/* 7. Card Hover Effect */
+.hover-lift {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.hover-lift:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 8. Sticky Card Helper */
+.sticky-summary {
+    top: 100px;
+}
+
+/* 9. Seat Legend Icons */
+.seat-legend-icon {
+    width: 25px;
+    height: 25px;
+}
+
+/* 10. Avatar Styles */
+.avatar-lg {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+}
+
+.avatar-placeholder-lg {
+    width: 120px;
+    height: 120px;
+    font-size: 3rem;
+}
+
+/* 11. Dashboard Card Icon */
+.dashboard-icon-circle {
+    width: 50px;
+    height: 50px;
+}
+
+/* 12. Driver Image */
+.driver-img {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+}
+
+.driver-placeholder {
+    width: 40px;
+    height: 40px;
+}
+
+/* 13. Form Width Utilities */
+.mw-800 {
+    max-width: 800px;
+}
+.mw-600 {
+    max-width: 600px;
+}
+.w-100px {
+    width: 100px;
+}
+.w-40px {
+    width: 40px;
+}
+.min-h-48 {
+    min-height: 48px;
+}
+
+/* 14. Image Utilities */
+.hero-img {
+    max-height: 500px;
+    width: 100%;
+    object-fit: cover;
+}
+.map-img {
+    height: 300px;
+    object-fit: cover;
+}
+.dest-img {
+    height: 150px;
+    object-fit: cover;
+}
+.step-img {
+    transform: rotate(-5deg);
+    z-index: 1;
+}
+
+/* 15. Typography Utilities */
+.ls-1 {
+    letter-spacing: 1px;
+}
+.lh-tight {
+    line-height: 1.2;
+}
+.lh-relaxed {
+    line-height: 1.6;
+}
+.fs-09 {
+    font-size: 0.9rem;
+}
+
+/* 16. Alert Positioning */
+.floating-alert {
+    z-index: 1050;
+    top: 100px;
+    width: 90%;
+    max-width: 600px;
+}
+
+/* ==============================================
+   17. Corner Wave Backgrounds
+   ============================================== */
+body {
+    position: relative;
+    min-height: 100vh;
+}
+
+.corner-wave {
+    position: absolute;
+    z-index: -1;
+    pointer-events: none;
+    width: 60vmin;
+    height: auto;
+}
+
+.wave-top-right {
+    top: 0;
+    right: 0;
+}
+
+.wave-bottom-left {
+    bottom: 0;
+    left: 0;
+    width: 45vmin;
+}
+
+/* Responsive: Tablet */
+@media (max-width: 992px) {
+    .corner-wave {
+        width: 50vmin;
+    }
+    .wave-bottom-left {
+        width: 35vmin;
+    }
+}
+
+/* Responsive: Mobile */
+@media (max-width: 576px) {
+    .corner-wave {
+        width: 40vmin;
+    }
+    .wave-bottom-left {
+        width: 28vmin;
+    }
+}
+
+/* Responsive: Very Small Screens - Hide completely */
+@media (max-width: 400px) {
+    .corner-wave {
+        display: none;
+    }
+}
+
+/* ==============================================
+   18. Smart Navbar - Hide on Scroll
+   ============================================== */
+.navbar {
+    transition: transform 0.3s ease-in-out;
+}
+
+.navbar-hidden {
+    transform: translateY(-100%);
+}
+
+/* ==============================================
+   19. Dark Footer (Navy Theme)
+   ============================================== */
+.footer-dark {
+    background: #1e293b;
+    color: #94a3b8;
+    padding: 80px 0 0;
+    margin-top: 0;
+}
+
+.footer-brand {
+    color: #ffc107;
+    font-weight: 700;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    letter-spacing: 1px;
+}
+
+.footer-text {
+    font-size: 0.9rem;
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+}
+
+.footer-heading {
+    color: #fff;
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 1.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.footer-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-links li {
+    margin-bottom: 0.75rem;
+}
+
+.footer-links a {
+    color: #a0aec0;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s ease, padding-left 0.2s ease;
+}
+
+.footer-links a:hover {
+    color: #fff;
+    padding-left: 5px;
+}
+
+.footer-contact {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-contact li {
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.footer-contact i {
+    color: #ffc107;
+    width: 16px;
+    margin-top: 3px;
+}
+
+.footer-social {
+    display: flex;
+    gap: 12px;
+}
+
+.social-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.social-icon:hover {
+    background: #ffc107;
+    color: #1e293b;
+    transform: translateY(-3px);
+}
+
+.footer-bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 25px 0;
+    margin-top: 50px;
+    font-size: 0.85rem;
+}
+
+.footer-bottom-link {
+    color: #a0aec0;
+    text-decoration: none;
+    margin-left: 20px;
+    transition: color 0.2s ease;
+}
+
+.footer-bottom-link:hover {
+    color: #fff;
+}
+
+/* Footer Responsive */
+@media (max-width: 768px) {
+    .footer-dark {
+        padding: 40px 0 0;
+        text-align: center;
+    }
+
+    .footer-social {
+        justify-content: center;
+        margin-bottom: 2rem;
+    }
+
+    .footer-contact li {
+        justify-content: center;
+    }
+
+    .footer-bottom {
+        margin-top: 30px;
+    }
+
+    .footer-bottom-link {
+        display: block;
+        margin: 10px 0 0 0;
+    }
+
+    .footer-bottom-link:first-child {
+        margin-top: 15px;
+    }
+}

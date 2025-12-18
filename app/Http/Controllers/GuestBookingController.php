@@ -47,9 +47,13 @@ class GuestBookingController extends Controller
     {
         $request->validate([
             'cancellation_reason' => 'required|string|max:255',
+            'guest_email' => 'required|email', // Required for ownership verification
         ]);
 
-        $booking = Booking::findOrFail($id);
+        // SECURITY: Verify ownership via email to prevent IDOR attacks
+        $booking = Booking::where('id', $id)
+            ->where('guest_email', $request->guest_email)
+            ->firstOrFail();
 
         // Check if 24 hours before departure
         $departureDate = $booking->schedule->departure_date;

@@ -1,5 +1,9 @@
 @extends('layouts.app')
 
+@push('styles')
+<link href="{{ asset('css/trips.css') }}" rel="stylesheet">
+@endpush
+
 @section('content')
 <div class="container py-5">
 
@@ -23,7 +27,7 @@
 
     {{-- PROGRESS BAR (Only if Round Trip) --}}
     @if(request('trip_type') == 'roundtrip' || (isset($step) && $step == 2))
-    <div class="progress mb-4" style="height: 5px;">
+    <div class="progress mb-4 progress-thin">
         {{-- If Step 1, width 50%. If Step 2, width 100% --}}
         <div class="progress-bar bg-danger" role="progressbar" style="width: {{ (isset($step) && $step == 2) ? '100%' : '50%' }}"></div>
     </div>

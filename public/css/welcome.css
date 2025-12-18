@@ -1,0 +1,11 @@
+/* ==============================================
+   WELCOME.CSS - Welcome/Home Page Styles
+   ============================================== */
+
+/* Hero Background */
+.hero-bg-wrapper {
+    background-image: url("../images/Desktop-bg.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}

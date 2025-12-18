@@ -294,4 +294,198 @@ class AdminController extends Controller
 
         return back()->with('success', 'Template deleted successfully.');
     }
+
+    // ==========================================
+    // 8. PASSENGER MANIFEST (DRIVER HANDOUT)
+    // ==========================================
+
+    /**
+     * Show passenger manifest for a specific schedule/trip.
+     * This is the list the driver needs before departure.
+     */
+    public function manifest($scheduleId)
+    {
+        $schedule = Schedule::with(['bus', 'origin', 'destination'])
+            ->findOrFail($scheduleId);
+
+        // Get all confirmed bookings for this trip
+        $bookings = Booking::where('schedule_id', $scheduleId)
+            ->where('status', 'confirmed')
+            ->orderBy('created_at')
+            ->get();
+
+        // Calculate totals
+        $totalPassengers = $bookings->sum('adults') + $bookings->sum('children');
+        $totalRevenue = $bookings->sum('total_price');
+        $seatsBooked = $bookings->pluck('seat_numbers')->flatten()->unique()->count();
+
+        return view('admin.manifest', compact(
+            'schedule',
+            'bookings',
+            'totalPassengers',
+            'totalRevenue',
+            'seatsBooked'
+        ));
+    }
+
+    // ==========================================
+    // 9. CONTACT MESSAGES INBOX
+    // ==========================================
+
+    /**
+     * List all contact form messages.
+     */
+    public function messages()
+    {
+        $messages = \App\Models\Message::orderBy('created_at', 'desc')
+            ->paginate(15);
+
+        $unreadCount = \App\Models\Message::where('is_read', false)->count();
+
+        return view('admin.messages.index', compact('messages', 'unreadCount'));
+    }
+
+    /**
+     * View a single message and mark as read.
+     */
+    public function showMessage($id)
+    {
+        $message = \App\Models\Message::findOrFail($id);
+
+        // Mark as read
+        if (!$message->is_read) {
+            $message->update(['is_read' => true]);
+        }
+
+        return view('admin.messages.show', compact('message'));
+    }
+
+    /**
+     * Delete a message.
+     */
+    public function deleteMessage($id)
+    {
+        \App\Models\Message::findOrFail($id)->delete();
+
+        return back()->with('success', 'Message deleted.');
+    }
+
+    // ==========================================
+    // 10. SALES REPORTS
+    // ==========================================
+
+    /**
+     * Sales report with filters.
+     */
+    public function salesReport(Request $request)
+    {
+        $period = $request->get('period', 'today');
+        $startDate = null;
+        $endDate = Carbon::now();
+
+        switch ($period) {
+            case 'today':
+                $startDate = Carbon::today();
+                break;
+            case 'yesterday':
+                $startDate = Carbon::yesterday();
+                $endDate = Carbon::yesterday()->endOfDay();
+                break;
+            case 'week':
+                $startDate = Carbon::now()->startOfWeek();
+                break;
+            case 'month':
+                $startDate = Carbon::now()->startOfMonth();
+                break;
+            case 'year':
+                $startDate = Carbon::now()->startOfYear();
+                break;
+            case 'custom':
+                $startDate = Carbon::parse($request->get('start_date', Carbon::today()));
+                $endDate = Carbon::parse($request->get('end_date', Carbon::now()));
+                break;
+            default:
+                $startDate = Carbon::today();
+        }
+
+        // Revenue Query
+        $revenue = Booking::where('status', 'confirmed')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->sum('total_price');
+
+        $bookingsCount = Booking::where('status', 'confirmed')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->count();
+
+        $cancelledCount = Booking::where('status', 'cancelled')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->count();
+
+        // Daily breakdown for charts
+        $dailyRevenue = Booking::where('status', 'confirmed')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->selectRaw('DATE(created_at) as date, SUM(total_price) as total')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        // Top routes by revenue
+        $topRoutes = Booking::where('bookings.status', 'confirmed')
+            ->whereBetween('bookings.created_at', [$startDate, $endDate])
+            ->join('schedules', 'bookings.schedule_id', '=', 'schedules.id')
+            ->join('terminals as origin', 'schedules.origin_id', '=', 'origin.id')
+            ->join('terminals as dest', 'schedules.destination_id', '=', 'dest.id')
+            ->selectRaw('CONCAT(origin.city, " → ", dest.city) as route, SUM(bookings.total_price) as total, COUNT(*) as bookings')
+            ->groupBy('route')
+            ->orderByDesc('total')
+            ->limit(5)
+            ->get();
+
+        return view('admin.reports.sales', compact(
+            'period',
+            'startDate',
+            'endDate',
+            'revenue',
+            'bookingsCount',
+            'cancelledCount',
+            'dailyRevenue',
+            'topRoutes'
+        ));
+    }
+
+    // ==========================================
+    // 11. USER MANAGEMENT
+    // ==========================================
+
+    /**
+     * List all users.
+     */
+    public function users()
+    {
+        $users = User::where('role', 'user')
+            ->withCount('bookings')
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
+
+        return view('admin.users.index', compact('users'));
+    }
+
+    /**
+     * Toggle user ban status.
+     */
+    public function toggleUserBan($id)
+    {
+        $user = User::findOrFail($id);
+
+        // Don't allow banning admins
+        if ($user->role === 'admin') {
+            return back()->with('error', 'Cannot ban an admin user.');
+        }
+
+        $user->is_banned = !($user->is_banned ?? false);
+        $user->save();
+
+        $status = $user->is_banned ? 'banned' : 'unbanned';
+        return back()->with('success', "User {$user->name} has been {$status}.");
+    }
 }

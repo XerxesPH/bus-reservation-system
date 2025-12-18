@@ -40,9 +40,9 @@
                             <td>
                                 <div class="d-flex align-items-center">
                                     @if($bus->driver_image)
-                                    <img src="{{ asset('storage/' . $bus->driver_image) }}" alt="Driver" class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                    <img src="{{ asset('storage/' . $bus->driver_image) }}" alt="Driver" class="rounded-circle me-2 driver-img">
                                     @else
-                                    <div class="bg-secondary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2 text-secondary" style="width: 40px; height: 40px;">
+                                    <div class="bg-secondary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2 text-secondary driver-placeholder">
                                         <i class="fa-solid fa-user"></i>
                                     </div>
                                     @endif

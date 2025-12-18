@@ -1,0 +1,8 @@
+/* ==============================================
+   CHECKOUT.CSS - Checkout Page Styles
+   ============================================== */
+
+/* Sticky Summary Card */
+.sticky-summary {
+    top: 100px;
+}

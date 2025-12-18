@@ -1,19 +1,23 @@
 @extends('layouts.app')
 
+@push('styles')
+<link href="{{ asset('css/checkout.css') }}" rel="stylesheet">
+@endpush
+
 @section('content')
-<div class="container py-5">
+<div class="container page-container">
     <div class="row g-5">
 
         {{-- LEFT COLUMN: Forms --}}
         <div class="col-lg-8">
-            <h4 class="fw-bold mb-4">Passenger Details</h4>
+            <h4 class="section-title">Passenger Details</h4>
 
             <form action="{{ route('checkout.store') }}" method="POST" id="checkout-form">
                 @csrf
 
                 {{-- 1. Contact Info --}}
-                <div class="card shadow-sm border-0 rounded-4 mb-4">
-                    <div class="card-body p-4">
+                <div class="card card-unified mb-4">
+                    <div class="card-body">
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold text-muted">Full Name</label>
@@ -23,7 +27,9 @@
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold text-muted">Contact Number</label>
                                 <input type="text" name="guest_phone" class="form-control" required
-                                    value="{{ Auth::check() ? Auth::user()->contact_number : old('guest_phone') }}" placeholder="09XX XXX XXXX">
+                                    value="{{ Auth::check() ? Auth::user()->contact_number : old('guest_phone') }}" placeholder="09XX XXX XXXX"
+                                    maxlength="13" inputmode="tel"
+                                    oninput="this.value = this.value.replace(/[^0-9\+\-\s]/g, '').slice(0, 13)">
                             </div>
                             <div class="col-12">
                                 <label class="form-label small fw-bold text-muted">Email Address</label>
@@ -36,9 +42,9 @@
                 </div>
 
                 {{-- 2. Payment Section --}}
-                <h4 class="fw-bold mb-4">Payment Method</h4>
-                <div class="card shadow-sm border-0 rounded-4 mb-4">
-                    <div class="card-body p-4">
+                <h4 class="section-title">Payment Method</h4>
+                <div class="card card-unified mb-4">
+                    <div class="card-body">
 
                         {{-- AUTH USER: SAVED METHODS --}}
                         @auth
@@ -105,16 +111,28 @@
                             <div id="card-fields">
                                 <div class="mb-3">
                                     <label class="form-label text-muted small fw-bold">Card Number</label>
-                                    <input type="text" class="form-control" placeholder="0000 0000 0000 0000">
+                                    <input type="text" name="card_number" class="form-control" placeholder="0000 0000 0000 0000"
+                                        maxlength="16" pattern="\d{16}" inputmode="numeric"
+                                        oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 16)">
                                 </div>
                                 <div class="row">
                                     <div class="col-6">
                                         <label class="form-label text-muted small fw-bold">Expiry</label>
-                                        <input type="text" class="form-control" placeholder="MM/YY">
+                                        <div class="d-flex gap-2">
+                                            <input type="text" name="card_expiry_month" class="form-control" placeholder="MM"
+                                                maxlength="2" pattern="\d{1,2}" inputmode="numeric" style="width: 60px;"
+                                                oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 2)">
+                                            <span class="align-self-center">/</span>
+                                            <input type="text" name="card_expiry_year" class="form-control" placeholder="YYYY"
+                                                maxlength="4" pattern="\d{4}" inputmode="numeric" style="width: 80px;"
+                                                oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4)">
+                                        </div>
                                     </div>
                                     <div class="col-6">
                                         <label class="form-label text-muted small fw-bold">CVC</label>
-                                        <input type="text" class="form-control" placeholder="123">
+                                        <input type="text" name="card_cvv" class="form-control" placeholder="123"
+                                            maxlength="4" pattern="\d{3,4}" inputmode="numeric"
+                                            oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4)">
                                     </div>
                                 </div>
                             </div>
@@ -130,7 +148,9 @@
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label text-muted small fw-bold">Mobile Number</label>
-                                    <input type="text" class="form-control" placeholder="09XX XXX XXXX">
+                                    <input type="text" name="ewallet_number" class="form-control" placeholder="09XX XXX XXXX"
+                                        maxlength="11" pattern="[0-9]{11}" inputmode="numeric"
+                                        oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)">
                                 </div>
                             </div>
 
@@ -140,7 +160,7 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-dark w-100 py-3 fw-bold shadow-lg" id="pay-now-btn">
+                <button type="submit" class="btn btn-dark btn-unified btn-unified-md w-100" id="pay-now-btn">
                     PAY ₱{{ number_format($totalPrice, 2) }} NOW
                 </button>
             </form>
@@ -148,11 +168,11 @@
 
         {{-- RIGHT COLUMN: Summary --}}
         <div class="col-lg-4">
-            <div class="card shadow border-0 rounded-4 sticky-top" style="top: 100px;">
-                <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-bold">Booking Summary</h5>
+            <div class="card card-unified card-summary">
+                <div class="card-header">
+                    <h5 class="card-header-title">Booking Summary</h5>
                 </div>
-                <div class="card-body p-4">
+                <div class="card-body">
 
                     {{-- OUTBOUND --}}
                     <div class="mb-4">
@@ -212,90 +232,7 @@
     </div>
 </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const useNewMethodRadio = document.getElementById('use_new_method');
-        const savedMethodRadios = document.querySelectorAll('input[name="payment_method"][id^="saved_"]');
-        const newMethodSection = document.getElementById('new-method-section');
-
-        // Toggle New Method Section
-        function toggleNewMethod(show) {
-            if (show) {
-                newMethodSection.classList.remove('d-none');
-                newMethodSection.classList.add('animate__animated', 'animate__fadeIn');
-            } else {
-                newMethodSection.classList.add('d-none');
-            }
-        }
-
-        if (useNewMethodRadio) {
-            useNewMethodRadio.addEventListener('change', function() {
-                if (this.checked) toggleNewMethod(true);
-            });
-        }
-
-        savedMethodRadios.forEach(radio => {
-            radio.addEventListener('change', function() {
-                if (this.checked) toggleNewMethod(false);
-            });
-        });
-
-        // Toggle Card vs E-Wallet fields
-        const typeCard = document.getElementById('type_card');
-        const typeWallet = document.getElementById('type_ewallet');
-        const cardFields = document.getElementById('card-fields');
-        const walletFields = document.getElementById('ewallet-fields');
-        const form = document.getElementById('checkout-form');
-
-        function toggleFields() {
-            if (typeCard.checked) {
-                cardFields.classList.remove('d-none');
-                walletFields.classList.add('d-none');
-            } else {
-                cardFields.classList.add('d-none');
-                walletFields.classList.remove('d-none');
-            }
-        }
-
-        typeCard.addEventListener('change', toggleFields);
-        typeWallet.addEventListener('change', toggleFields);
-
-        // Intercept Form Submit to handle "New Method" value
-        form.addEventListener('submit', function(e) {
-            // If "Use New Method" is checked OR no saved methods exist (Guest)
-            // We need to set the payment_method value to something meaningful like "credit_card" or "gcash"
-            // instead of just "new".
-
-            const isNewSelected = useNewMethodRadio ? useNewMethodRadio.checked : true;
-
-            if (isNewSelected) {
-                // Determine if Card or Wallet
-                const type = typeCard.checked ? 'Card' : 'E-Wallet';
-                // We create a hidden input to override the "new" value, or just update the radio value dynamically?
-                // Easier: Append a hidden input with the specific type
-
-                // If the user selected "new", the radio value sent is "new". 
-                // But the controller needs the type.
-
-                // Actually, let's just inject the specific string into the request by manipulating the form data?
-                // Or better, change the value of the radio button itself before submit? 
-                // No, radio groups are tricky.
-
-                // Solution: Add a hidden input named 'payment_method' ONLY if we are in "new" mode, 
-                // and disable the radio buttons so they don't submit.
-
-                if (useNewMethodRadio) {
-                    // Disable the "new" radio so it doesn't send "new"
-                    useNewMethodRadio.disabled = true;
-                }
-
-                const hiddenInput = document.createElement('input');
-                hiddenInput.type = 'hidden';
-                hiddenInput.name = 'payment_method';
-                hiddenInput.value = typeCard.checked ? 'Credit Card' : 'GCash';
-                form.appendChild(hiddenInput);
-            }
-        });
-    });
-</script>
+@push('scripts')
+<script src="{{ asset('js/checkout.js') }}"></script>
+@endpush
 @endsection
