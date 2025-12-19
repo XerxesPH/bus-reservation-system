@@ -295,6 +295,30 @@
 </head>
 
 <body>
+    @php
+    $totalPaid = $booking->total_price;
+    if ($booking->linkedBooking) {
+    $totalPaid = ($booking->total_price ?? 0) + ($booking->linkedBooking->total_price ?? 0);
+    }
+
+    $returnSchedule = null;
+    $returnSeats = null;
+    $returnBusLabel = null;
+    if ($booking->return_schedule_id && $booking->returnSchedule) {
+    $returnSchedule = $booking->returnSchedule;
+    $returnSeats = $booking->return_seat_numbers;
+    $returnBusLabel = $booking->returnSchedule->bus->name
+    ?? $booking->returnSchedule->bus->code
+    ?? 'N/A';
+    } elseif ($booking->linkedBooking && $booking->linkedBooking->schedule) {
+    $returnSchedule = $booking->linkedBooking->schedule;
+    $returnSeats = $booking->linkedBooking->seat_numbers;
+    $returnBusLabel = $booking->linkedBooking->schedule->bus->name
+    ?? $booking->linkedBooking->schedule->bus->code
+    ?? 'N/A';
+    }
+    @endphp
+
     <div class="ticket">
         {{-- Header --}}
         <div class="ticket-header">
@@ -368,6 +392,45 @@
                         </div>
                     </div>
                 </div>
+
+                @if($returnSchedule)
+                <div class="route-section" style="margin-top: 18px;">
+                    <div class="route-row">
+                        <div class="route-point">
+                            <div class="route-label">Return From</div>
+                            <div class="route-value">{{ $returnSchedule->origin->city ?? 'N/A' }}</div>
+                        </div>
+                        <div class="route-arrow">→</div>
+                        <div class="route-point">
+                            <div class="route-label">Return To</div>
+                            <div class="route-value">{{ $returnSchedule->destination->city ?? 'N/A' }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="details-grid">
+                    <div class="detail-row">
+                        <div class="detail-item">
+                            <div class="detail-label">Return Date</div>
+                            <div class="detail-value">{{ \Carbon\Carbon::parse($returnSchedule->departure_date)->format('M d, Y') }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Return Time</div>
+                            <div class="detail-value">{{ \Carbon\Carbon::parse($returnSchedule->departure_time)->format('h:i A') }}</div>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-item">
+                            <div class="detail-label">Return Bus</div>
+                            <div class="detail-value">{{ $returnBusLabel ?? 'N/A' }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Return Seat(s)</div>
+                            <div class="detail-value">{{ is_array($returnSeats) ? implode(', ', $returnSeats) : $returnSeats }}</div>
+                        </div>
+                    </div>
+                </div>
+                @endif
             </div>
 
             {{-- Right Column --}}
@@ -375,7 +438,7 @@
                 {{-- Price --}}
                 <div class="price-section">
                     <div class="price-label">Total Fare</div>
-                    <div class="price-value">₱{{ number_format($booking->total_price, 2) }}</div>
+                    <div class="price-value">₱{{ number_format($totalPaid, 2) }}</div>
                 </div>
 
                 {{-- QR Code --}}

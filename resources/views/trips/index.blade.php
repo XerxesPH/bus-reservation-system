@@ -5,24 +5,30 @@
 @endpush
 
 @section('content')
-<div class="container py-5">
+<div class="container page-container">
 
     {{-- HEADER SECTION --}}
-    <div class="d-flex justify-content-between align-items-center mb-5 border-bottom pb-3">
+    <div class="page-header-left d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
         <div>
             {{-- We use $headerTitle passed from the Controller (e.g., "Select Outbound" or "Select Return") --}}
-            <h2 class="fw-bold text-dark">{{ $headerTitle ?? 'Select Trip' }}</h2>
-            <p class="text-muted mb-0">
+            <h1 class="page-title mb-1">{{ $headerTitle ?? 'Select Trip' }}</h1>
+            <p class="page-subtitle mb-0">
                 Found {{ $trips->count() }} results for {{ $origin->city }} to {{ $destination->city }}
             </p>
         </div>
 
         {{-- If we are in Step 2, show Cancel, otherwise New Search --}}
-        @if(isset($step) && $step == 2)
-        <a href="{{ url('/') }}" class="btn btn-danger btn-sm rounded-0">CANCEL ROUND TRIP</a>
-        @else
-        <a href="{{ url('/') }}" class="btn btn-outline-dark btn-sm rounded-0">NEW SEARCH</a>
-        @endif
+        <div class="d-flex gap-2">
+            @if(isset($step) && $step == 2)
+            <a href="{{ url('/') }}" class="btn btn-outline-danger btn-unified btn-unified-sm fw-bold">
+                Cancel Round Trip
+            </a>
+            @else
+            <a href="{{ url('/') }}" class="btn btn-outline-secondary btn-unified btn-unified-sm fw-bold">
+                New Search
+            </a>
+            @endif
+        </div>
     </div>
 
     {{-- PROGRESS BAR (Only if Round Trip) --}}
@@ -35,26 +41,34 @@
 
     {{-- TRIPS LIST --}}
     <div class="mb-5">
-        <h5 class="fw-bold text-danger mb-3 d-flex align-items-center">
-            <span class="badge bg-danger me-2 rounded-0">{{ $stepLabel ?? '1' }}</span>
+        <h5 class="section-title d-flex align-items-center mb-3">
+            <span class="badge bg-danger me-2 rounded-pill">{{ $stepLabel ?? '1' }}</span>
             {{ $origin->city }} <i class="fa-solid fa-arrow-right mx-2 text-muted small"></i> {{ $destination->city }}
         </h5>
 
         <div class="row">
             @forelse($trips as $trip)
             <div class="col-md-6 mb-4">
-                <div class="card h-100 shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title fw-bold">{{ $trip->bus->name ?? 'Bus' }}</h5>
-                        <p class="text-muted mb-2">
-                            <i class="fa-regular fa-clock me-1"></i>
-                            {{ \Carbon\Carbon::parse($trip->departure_time)->format('h:i A') }}
-                        </p>
+                <div class="card card-unified h-100">
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h5 class="fw-bold mb-1">{{ $trip->bus->name ?? 'Bus ' . $trip->bus->code }}</h5>
+                                <div class="text-muted small">
+                                    <i class="fa-regular fa-clock me-1"></i>
+                                    {{ \Carbon\Carbon::parse($trip->departure_time)->format('h:i A') }}
+                                    <span class="mx-2">•</span>
+                                    <span class="text-uppercase">{{ $trip->bus->type }}</span>
+                                </div>
+                            </div>
+                            <span class="badge bg-light text-dark border">{{ $trip->seats_left ?? '-' }} seats left</span>
+                        </div>
 
                         {{-- PRICE DISPLAY --}}
-                        <h4 class="text-danger fw-bold mb-3">
-                            ₱{{ number_format($trip->price, 2) }}
-                        </h4>
+                        <div class="mt-3 mb-3">
+                            <div class="small text-muted">Price per adult</div>
+                            <div class="h4 fw-bold text-danger mb-0">₱{{ number_format($trip->price, 2) }}</div>
+                        </div>
 
                         {{--
                                 SELECT BUTTON 
@@ -65,17 +79,19 @@
                                 'schedule_id' => $trip->id,
                                 'leg' => (isset($step) && $step == 1 && request('trip_type') == 'roundtrip') ? 'outbound' : 'return'
                             ])) }}"
-                            class="btn btn-dark w-100 rounded-0 text-uppercase fw-bold">
+                            class="btn btn-navy btn-unified btn-unified-md w-100 mt-auto fw-bold">
                             Select Seats
                         </a>
                     </div>
                 </div>
             </div>
             @empty
-            <div class="col-12 text-center py-5 bg-light border">
-                <i class="fa-solid fa-bus fa-3x text-muted mb-3 opacity-50"></i>
-                <p class="text-muted mb-0 fw-bold">No trips found for this date.</p>
-                <small>Try selecting a different date or route.</small>
+            <div class="col-12">
+                <div class="empty-state">
+                    <i class="fa-solid fa-bus empty-state-icon"></i>
+                    <p class="empty-state-text">No trips found for this date.</p>
+                    <a href="{{ url('/') }}" class="btn btn-outline-secondary btn-unified btn-unified-sm fw-bold">New Search</a>
+                </div>
             </div>
             @endforelse
         </div>

@@ -9,6 +9,7 @@ let totalPax = 0;
 let basePrice = 0;
 let childPrice = 0;
 let finalTotal = 0;
+let isWholeBus = false;
 
 // Auto-initialize on DOM ready by reading data attributes
 document.addEventListener("DOMContentLoaded", function () {
@@ -19,6 +20,7 @@ document.addEventListener("DOMContentLoaded", function () {
     adults = parseInt(container.getAttribute("data-adults")) || 0;
     children = parseInt(container.getAttribute("data-children")) || 0;
     basePrice = parseFloat(container.getAttribute("data-base-price")) || 0;
+    isWholeBus = container.getAttribute("data-whole-bus") === "1";
 
     totalPax = adults + children;
     childPrice = basePrice * 0.8;
@@ -26,9 +28,29 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Init price display
     document.getElementById("total-price").innerText = formatPrice(finalTotal);
+
+    if (isWholeBus) {
+        // Auto-select every available seat and lock the grid.
+        const availableButtons = Array.from(
+            document.querySelectorAll(".seat-grid .seat-btn[data-seat]")
+        ).filter((btn) => !btn.disabled);
+
+        selectedSeats = availableButtons
+            .map((btn) => btn.getAttribute("data-seat"))
+            .filter(Boolean);
+
+        availableButtons.forEach((btn) => {
+            btn.classList.remove("btn-outline-primary");
+            btn.classList.add("btn-warning");
+            btn.setAttribute("disabled", "true");
+        });
+
+        updateSeatUI();
+    }
 });
 
 function toggleSeat(button) {
+    if (isWholeBus) return;
     const seatNum = button.getAttribute("data-seat");
 
     if (selectedSeats.includes(seatNum)) {

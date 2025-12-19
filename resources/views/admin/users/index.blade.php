@@ -9,6 +9,26 @@
         </div>
     </div>
 
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <form method="GET" action="{{ route('admin.users') }}" class="row g-2 align-items-center">
+                <div class="col-12 col-lg">
+                    <input type="text" name="q" class="form-control" placeholder="Search users (supports multiple terms, e.g. 'juan@gmail.com active')" value="{{ request('q') }}">
+                </div>
+                <div class="col-12 col-lg-auto d-grid d-lg-flex gap-2">
+                    <button type="submit" class="btn btn-primary fw-bold">
+                        <i class="fa-solid fa-magnifying-glass me-2"></i> Search
+                    </button>
+                    @if(request()->filled('q'))
+                    <a href="{{ route('admin.users') }}" class="btn btn-outline-secondary fw-bold">
+                        Clear
+                    </a>
+                    @endif
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="card border-0 shadow-sm">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
@@ -35,7 +55,7 @@
                             </div>
                         </td>
                         <td>{{ $user->email }}</td>
-                        <td>{{ $user->contact_number ?? $user->phone_number ?? 'N/A' }}</td>
+                        <td>{{ $user->contact_number ?? 'N/A' }}</td>
                         <td>
                             <span class="badge bg-primary">{{ $user->bookings_count }}</span>
                         </td>
@@ -69,6 +89,11 @@
                         <td colspan="7" class="text-center py-5">
                             <i class="fa-solid fa-users fa-3x text-muted mb-3"></i>
                             <p class="text-muted">No users found.</p>
+                            @if(request()->filled('q'))
+                            <div class="mt-2">
+                                <a href="{{ route('admin.users') }}" class="btn btn-sm btn-outline-secondary fw-bold">Clear search</a>
+                            </div>
+                            @endif
                         </td>
                     </tr>
                     @endforelse

@@ -10,6 +10,7 @@ use App\Models\Terminal;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
 {
@@ -22,7 +23,7 @@ class AdminController extends Controller
         $todayTrips = Schedule::whereDate('departure_date', Carbon::today())->count();
 
         // Get recent bookings for the list
-        $recentBookings = Booking::with(['schedule.origin', 'schedule.destination'])
+        $recentBookings = Booking::with(['schedule.origin', 'schedule.destination', 'schedule.bus'])
             ->latest()
             ->take(5)
             ->get();
@@ -117,14 +118,52 @@ class AdminController extends Controller
     }
 
     // 4. Schedule Management List
-    public function schedules()
+    public function schedules(Request $request)
     {
+        $q = trim((string) $request->query('q', ''));
+
         // Get schedules ordered by date and time
         // Pagination is important as there could be many
-        $schedules = Schedule::with(['bus', 'origin', 'destination'])
+        $query = Schedule::with(['bus', 'origin', 'destination']);
+
+        if ($q !== '') {
+            $terms = preg_split('/\s+/', $q, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+            foreach ($terms as $term) {
+                $like = '%' . $term . '%';
+
+                $query->where(function ($sub) use ($term, $like) {
+                    if (ctype_digit($term)) {
+                        $sub->orWhere('id', (int) $term);
+                    }
+
+                    $sub->orWhere('departure_date', 'like', $like)
+                        ->orWhere('departure_time', 'like', $like)
+                        ->orWhere('status', 'like', $like)
+                        ->orWhere('price', 'like', $like)
+                        ->orWhereHas('bus', function ($busQ) use ($like) {
+                            $busQ->where('code', 'like', $like)
+                                ->orWhere('type', 'like', $like);
+                        })
+                        ->orWhereHas('origin', function ($termQ) use ($like) {
+                            $termQ->where('city', 'like', $like)
+                                ->orWhere('name', 'like', $like)
+                                ->orWhere('province', 'like', $like);
+                        })
+                        ->orWhereHas('destination', function ($termQ) use ($like) {
+                            $termQ->where('city', 'like', $like)
+                                ->orWhere('name', 'like', $like)
+                                ->orWhere('province', 'like', $like);
+                        });
+                });
+            }
+        }
+
+        $schedules = $query
             ->orderBy('departure_date', 'desc')
             ->orderBy('departure_time', 'asc')
-            ->paginate(15);
+            ->paginate(15)
+            ->appends($request->query());
 
         return view('admin.schedules', compact('schedules'));
     }
@@ -162,13 +201,17 @@ class AdminController extends Controller
     {
         $request->validate([
             'code' => 'required|string|unique:buses,code',
-            'type' => 'required|in:deluxe,regular',
+            'type' => 'required|in:deluxe,regular,luxury',
             'capacity' => 'required|integer|min:10|max:60',
             'driver_name' => 'required|string',
             'driver_image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        $data = $request->all();
+        $data = $request->only(['code', 'type', 'capacity', 'driver_name']);
+        $fixedCapacity = Bus::fixedCapacityForType($request->type);
+        if ($fixedCapacity !== null) {
+            $data['capacity'] = $fixedCapacity;
+        }
 
         if ($request->hasFile('driver_image')) {
             $path = $request->file('driver_image')->store('drivers', 'public');
@@ -182,12 +225,67 @@ class AdminController extends Controller
 
     // --- BOOKING MANAGER ---
 
-    public function bookings()
+    public function bookings(Request $request)
     {
+        $q = trim((string) $request->query('q', ''));
+
+        $query = Booking::with([
+            'user',
+            'schedule.origin',
+            'schedule.destination',
+            'schedule.bus',
+        ]);
+
+        if ($q !== '') {
+            $terms = preg_split('/\s+/', $q, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+            foreach ($terms as $term) {
+                $like = '%' . $term . '%';
+
+                $query->where(function ($sub) use ($term, $like) {
+                    if (ctype_digit($term)) {
+                        $sub->orWhere('id', (int) $term);
+                    }
+
+                    $sub->orWhere('booking_reference', 'like', $like)
+                        ->orWhere('guest_name', 'like', $like)
+                        ->orWhere('guest_email', 'like', $like)
+                        ->orWhere('guest_phone', 'like', $like)
+                        ->orWhere('status', 'like', $like)
+                        ->orWhere('payment_method', 'like', $like)
+                        ->orWhere('payment_status', 'like', $like)
+                        ->orWhere('trip_type', 'like', $like)
+                        ->orWhere('bus_number', 'like', $like)
+                        ->orWhere('total_price', 'like', $like)
+                        ->orWhereHas('schedule', function ($scheduleQ) use ($like) {
+                            $scheduleQ->where('departure_date', 'like', $like)
+                                ->orWhere('departure_time', 'like', $like)
+                                ->orWhere('status', 'like', $like)
+                                ->orWhere('price', 'like', $like);
+                        })
+                        ->orWhereHas('schedule.bus', function ($busQ) use ($like) {
+                            $busQ->where('code', 'like', $like)
+                                ->orWhere('type', 'like', $like);
+                        })
+                        ->orWhereHas('schedule.origin', function ($termQ) use ($like) {
+                            $termQ->where('city', 'like', $like)
+                                ->orWhere('name', 'like', $like)
+                                ->orWhere('province', 'like', $like);
+                        })
+                        ->orWhereHas('schedule.destination', function ($termQ) use ($like) {
+                            $termQ->where('city', 'like', $like)
+                                ->orWhere('name', 'like', $like)
+                                ->orWhere('province', 'like', $like);
+                        });
+                });
+            }
+        }
+
         // Get all bookings, newest first, with pagination
-        $bookings = Booking::with(['user', 'schedule.origin', 'schedule.destination'])
+        $bookings = $query
             ->latest()
-            ->paginate(10); // Show 10 per page
+            ->paginate(10)
+            ->appends($request->query());
 
         return view('admin.bookings', compact('bookings'));
     }
@@ -225,13 +323,29 @@ class AdminController extends Controller
     public function updateBus(Request $request, $id)
     {
         $request->validate([
-            'code' => 'required|string',
-            'type' => 'required|in:deluxe,regular',
+            'code' => 'required|string|unique:buses,code,' . $id,
+            'type' => 'required|in:deluxe,regular,luxury',
             'capacity' => 'required|integer|min:10|max:60',
+            'driver_name' => 'nullable|string|max:255',
+            'driver_image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
         $bus = Bus::findOrFail($id);
-        $bus->update($request->all());
+
+        $data = $request->only(['code', 'type', 'capacity', 'driver_name']);
+        $fixedCapacity = Bus::fixedCapacityForType($request->type);
+        if ($fixedCapacity !== null) {
+            $data['capacity'] = $fixedCapacity;
+        }
+
+        if ($request->hasFile('driver_image')) {
+            if ($bus->driver_image && Storage::disk('public')->exists($bus->driver_image)) {
+                Storage::disk('public')->delete($bus->driver_image);
+            }
+            $data['driver_image'] = $request->file('driver_image')->store('drivers', 'public');
+        }
+
+        $bus->update($data);
 
         return redirect()->route('admin.dashboard')->with('success', 'Bus updated successfully!');
     }
@@ -408,6 +522,9 @@ class AdminController extends Controller
                 $startDate = Carbon::today();
         }
 
+        $startDate = $startDate->copy()->startOfDay();
+        $endDate = $endDate->copy()->endOfDay();
+
         // Revenue Query
         $revenue = Booking::where('status', 'confirmed')
             ->whereBetween('created_at', [$startDate, $endDate])
@@ -460,12 +577,47 @@ class AdminController extends Controller
     /**
      * List all users.
      */
-    public function users()
+    public function users(Request $request)
     {
-        $users = User::where('role', 'user')
+        $q = trim((string) $request->query('q', ''));
+
+        $query = User::where('role', 'user');
+
+        if ($q !== '') {
+            $terms = preg_split('/\s+/', $q, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+            foreach ($terms as $term) {
+                $like = '%' . $term . '%';
+                $normalized = strtolower($term);
+
+                $query->where(function ($sub) use ($term, $like, $normalized) {
+                    if (ctype_digit($term)) {
+                        $sub->orWhere('id', (int) $term);
+                    }
+
+                    if ($normalized === 'banned') {
+                        $sub->orWhere('is_banned', true);
+                    }
+
+                    if ($normalized === 'active') {
+                        $sub->orWhere(function ($q2) {
+                            $q2->whereNull('is_banned')->orWhere('is_banned', false);
+                        });
+                    }
+
+                    $sub->orWhere('name', 'like', $like)
+                        ->orWhere('email', 'like', $like)
+                        ->orWhere('contact_number', 'like', $like)
+                        ->orWhere('created_at', 'like', $like);
+                });
+            }
+        }
+
+        $users = $query
             ->withCount('bookings')
             ->orderBy('created_at', 'desc')
-            ->paginate(15);
+            ->paginate(15)
+            ->appends($request->query());
 
         return view('admin.users.index', compact('users'));
     }

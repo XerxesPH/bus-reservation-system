@@ -1,8 +1,11 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container py-5">
-    <h2 class="mb-4">My Bookings</h2>
+<div class="container page-container">
+    <div class="page-header-left mb-4">
+        <h1 class="page-title mb-1">My Bookings</h1>
+        <p class="page-subtitle mb-0">View and manage your trip history.</p>
+    </div>
 
     @if($bookings->isEmpty())
     <div class="alert alert-info">
@@ -12,7 +15,7 @@
     <div class="row">
         @foreach($bookings as $booking)
         <div class="col-md-6 mb-4">
-            <div class="card shadow-sm border-0 h-100">
+            <div class="card card-unified h-100">
                 <div class="card-header d-flex justify-content-between align-items-center 
                             {{ $booking->status == 'cancelled' ? 'bg-secondary text-white' : 'bg-primary text-white' }}">
                     <span class="fw-bold">Reference: #{{ $booking->booking_reference ?? $booking->id }}</span>

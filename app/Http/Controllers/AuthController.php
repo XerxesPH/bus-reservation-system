@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Booking;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -24,6 +26,13 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
+
+            $user = Auth::user();
+            if ($user) {
+                Booking::whereNull('user_id')
+                    ->where('guest_email', $user->email)
+                    ->update(['user_id' => $user->id]);
+            }
 
             // Redirect based on role
             if (Auth::user()->role === 'admin') {
@@ -50,14 +59,25 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users',
             'password' => 'required|min:6|confirmed', // checks password_confirmation field
+            'dob' => 'required|date|before:today',
         ]);
+
+        $age = Carbon::parse($request->dob)->age;
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => 'user', // Default to user
+            'age' => $age,
         ]);
+
+        // role is intentionally not mass-assignable; set explicitly
+        $user->role = 'user';
+        $user->save();
+
+        Booking::whereNull('user_id')
+            ->where('guest_email', $user->email)
+            ->update(['user_id' => $user->id]);
 
         Auth::login($user);
 

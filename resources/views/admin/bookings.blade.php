@@ -11,6 +11,26 @@
     <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body">
+            <form method="GET" action="{{ route('admin.bookings') }}" class="row g-2 align-items-center">
+                <div class="col-12 col-lg">
+                    <input type="text" name="q" class="form-control" placeholder="Search bookings (supports multiple terms, e.g. 'BUS-101 2025-12-20 passenger')" value="{{ request('q') }}">
+                </div>
+                <div class="col-12 col-lg-auto d-grid d-lg-flex gap-2">
+                    <button type="submit" class="btn btn-primary fw-bold">
+                        <i class="fa-solid fa-magnifying-glass me-2"></i> Search
+                    </button>
+                    @if(request()->filled('q'))
+                    <a href="{{ route('admin.bookings') }}" class="btn btn-outline-secondary fw-bold">
+                        Clear
+                    </a>
+                    @endif
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="card shadow-sm border-0">
         <div class="card-body">
             <table class="table table-striped table-hover align-middle">
@@ -65,6 +85,20 @@
                         </td>
                     </tr>
                     @endforeach
+
+                    @if($bookings->isEmpty())
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <i class="fa-solid fa-ticket fa-3x text-muted mb-3 opacity-50"></i>
+                            <p class="text-muted">No bookings found.</p>
+                            @if(request()->filled('q'))
+                            <div class="mt-2">
+                                <a href="{{ route('admin.bookings') }}" class="btn btn-sm btn-outline-secondary fw-bold">Clear search</a>
+                            </div>
+                            @endif
+                        </td>
+                    </tr>
+                    @endif
                 </tbody>
             </table>
 

@@ -33,7 +33,7 @@
     @endunless
 
     {{-- NAVBAR --}}
-    <nav class="navbar navbar-expand-lg fixed-top bg-transparent" id="mainNavbar">
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top bg-transparent {{ (!Auth::check() || Auth::user()->role !== 'admin') ? 'nav-drawer-enabled' : '' }}" id="mainNavbar">
         <div class="container-fluid px-4">
 
             {{-- 1. LOGO (Left) --}}
@@ -44,9 +44,11 @@
             {{-- Hide navigation buttons and user icon on login/register pages --}}
             @unless(request()->routeIs('login') || request()->routeIs('register'))
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
+            @if(!Auth::check() || Auth::user()->role !== 'admin')
+            <button type="button" class="btn p-2 border-0 bg-transparent d-lg-none" id="mobileDrawerToggle" aria-label="Open menu" aria-expanded="false">
+                <i class="fa-solid fa-bars fa-lg"></i>
             </button>
+            @endif
 
             {{-- 2. CENTER NAV LINKS --}}
             <div class="collapse navbar-collapse" id="navbarNav">
@@ -77,7 +79,11 @@
                     {{-- Authenticated User: Dropdown with Profile & Logout --}}
                     <div class="dropdown">
                         <button class="user-icon-btn dropdown-toggle hide-arrow" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            @if(Auth::user()->avatar)
+                            <img src="{{ asset('storage/' . Auth::user()->avatar) }}" alt="Profile" class="rounded-circle" style="width: 34px; height: 34px; object-fit: cover; display: block;">
+                            @else
                             <i class="bi bi-person-circle"></i>
+                            @endif
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end border-0 shadow mt-2">
                             <li class="px-3 py-2 text-muted small">{{ Auth::user()->name }}</li>
@@ -109,6 +115,44 @@
 
         </div>
     </nav>
+
+    @unless(request()->routeIs('login') || request()->routeIs('register') || request()->is('admin*'))
+    @if(!Auth::check() || Auth::user()->role !== 'admin')
+    <div class="mobile-drawer-overlay" id="mobileDrawerOverlay" aria-hidden="true"></div>
+    <aside class="mobile-drawer" id="mobileDrawer" aria-hidden="true">
+        <div class="mobile-drawer-header">
+            <div class="mobile-drawer-title">Menu</div>
+            <button type="button" class="mobile-drawer-close" id="mobileDrawerClose" aria-label="Close menu">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="mobile-drawer-body">
+            @auth
+            @if(Auth::user()->role !== 'admin')
+            <a class="mobile-drawer-link" href="{{ url('/') }}">Home</a>
+            <a class="mobile-drawer-link" href="{{ route('user.bookings') }}">Booking</a>
+            <a class="mobile-drawer-link" href="{{ route('pages.schedule') }}">Schedule</a>
+            <a class="mobile-drawer-link" href="{{ route('pages.contact') }}">Contact</a>
+            <hr class="my-3">
+            <a class="mobile-drawer-link" href="{{ route('profile.index') }}">My Account</a>
+            <form action="{{ route('logout') }}" method="POST" class="mt-2">
+                @csrf
+                <button type="submit" class="mobile-drawer-link mobile-drawer-link-danger w-100 text-start">Logout</button>
+            </form>
+            @endif
+            @else
+            <a class="mobile-drawer-link" href="{{ url('/') }}">Home</a>
+            <a class="mobile-drawer-link" href="{{ route('guest.bookings.search') }}">Booking</a>
+            <a class="mobile-drawer-link" href="{{ route('pages.schedule') }}">Schedule</a>
+            <a class="mobile-drawer-link" href="{{ route('pages.contact') }}">Contact</a>
+            <hr class="my-3">
+            <a class="mobile-drawer-link" href="{{ route('login') }}">Login</a>
+            <a class="mobile-drawer-link" href="{{ route('register') }}">Sign Up</a>
+            @endauth
+        </div>
+    </aside>
+    @endif
+    @endunless
 
     {{-- MAIN CONTENT --}}
     @if(request()->routeIs('login') || request()->routeIs('register'))

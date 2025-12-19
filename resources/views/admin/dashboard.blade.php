@@ -132,9 +132,10 @@
             <table class="table table-hover align-middle mb-0">
                 <thead class="bg-light">
                     <tr>
-                        <th>Ref ID</th>
+                        <th>Booking Reference</th>
                         <th>Guest</th>
                         <th>Route</th>
+                        <th>Bus</th>
                         <th>Date</th>
                         <th>Seats</th>
                         <th>Amount</th>
@@ -144,9 +145,10 @@
                 <tbody>
                     @foreach($recentBookings as $booking)
                     <tr>
-                        <td>#{{ $booking->id }}</td>
+                        <td>{{ $booking->booking_reference }}</td>
                         <td>{{ $booking->guest_name }}</td>
                         <td>{{ $booking->schedule->origin->city }} ➔ {{ $booking->schedule->destination->city }}</td>
+                        <td>{{ $booking->schedule->bus->code ?? $booking->schedule->bus->bus_number ?? $booking->schedule->bus->name ?? 'N/A' }}</td>
                         <td>{{ $booking->schedule->departure_date }}</td>
                         <td>{{ count($booking->seat_numbers) }}</td>
                         <td>₱ {{ number_format($booking->total_price) }}</td>
