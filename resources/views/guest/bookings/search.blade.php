@@ -1,17 +1,24 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container py-5">
+<div class="container page-container">
+    <div class="page-header">
+        <h1 class="page-title">Manage Booking</h1>
+        <p class="page-subtitle">View, print, or cancel your ticket.</p>
+    </div>
+
     <div class="row justify-content-center">
-        <div class="col-md-6 col-lg-5">
-            <div class="card border-0 shadow-lg rounded-4">
-                <div class="card-body p-5">
-                    <div class="text-center mb-4">
-                        <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
-                            <i class="fa-solid fa-ticket fa-2x text-primary"></i>
+        <div class="col-md-7 col-lg-5">
+            <div class="card card-unified">
+                <div class="card-body p-4 p-md-5">
+                    <div class="d-flex align-items-center gap-3 mb-4">
+                        <div class="bg-warning bg-opacity-10 text-warning rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
+                            <i class="fa-solid fa-ticket fa-lg"></i>
                         </div>
-                        <h4 class="fw-bold">Manage Booking</h4>
-                        <p class="text-muted small">View, print, or cancel your ticket.</p>
+                        <div>
+                            <div class="fw-bold">Find your booking</div>
+                            <div class="text-muted small">Enter your reference and email to view details.</div>
+                        </div>
                     </div>
 
                     @if(session('error'))
@@ -34,15 +41,16 @@
                             <div class="form-text text-center small">Used during booking.</div>
                         </div>
 
-                        <button type="submit" class="btn btn-navy w-100 py-3 fw-bold rounded-3 shadow-sm">
+                        <button type="submit" class="btn btn-navy btn-unified btn-unified-md w-100 fw-bold">
                             FIND BOOKING
                         </button>
                     </form>
-                </div>
-            </div>
 
-            <div class="text-center mt-4">
-                <p class="text-muted small">Having trouble? <a href="#" class="text-decoration-none fw-bold">Contact Support</a></p>
+                    <div class="d-grid gap-2 mt-3">
+                        <a href="{{ url('/') }}" class="btn btn-outline-secondary btn-unified btn-unified-sm fw-bold">Back to Home</a>
+                        <a href="{{ route('pages.contact') }}" class="btn btn-outline-dark btn-unified btn-unified-sm fw-bold">Contact Support</a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

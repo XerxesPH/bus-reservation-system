@@ -28,13 +28,33 @@ class GuestBookingController extends Controller
 
         // Validate Ownership
         // We check against the 'guest_email' column in the bookings table.
-        $booking = Booking::where('booking_reference', $request->booking_reference)
+        $bookings = Booking::where('booking_reference', $request->booking_reference)
             ->where('guest_email', $request->email)
-            ->with(['schedule.bus', 'schedule.origin', 'schedule.destination', 'returnSchedule.bus', 'returnSchedule.origin', 'returnSchedule.destination'])
-            ->first();
+            ->with([
+                'user',
+                'schedule.bus',
+                'schedule.origin',
+                'schedule.destination',
+                'returnSchedule.bus',
+                'returnSchedule.origin',
+                'returnSchedule.destination',
+                'linkedBooking.schedule.bus',
+                'linkedBooking.schedule.origin',
+                'linkedBooking.schedule.destination',
+            ])
+            ->get();
 
-        if (!$booking) {
+        if ($bookings->isEmpty()) {
             return back()->with('error', 'Booking not found or email does not match.');
+        }
+
+        $booking = $bookings->firstWhere('trip_type', 'roundtrip_outbound')
+            ?? $bookings->firstWhere('trip_type', 'oneway')
+            ?? $bookings->first();
+
+        $returnBooking = $bookings->firstWhere('trip_type', 'roundtrip_return');
+        if ($returnBooking && !$booking->linkedBooking) {
+            $booking->setRelation('linkedBooking', $returnBooking);
         }
 
         return view('guest.bookings.show', compact('booking'));

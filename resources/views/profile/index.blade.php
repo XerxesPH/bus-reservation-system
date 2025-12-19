@@ -36,9 +36,15 @@
 
             {{-- Flash Messages --}}
             @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1080;">
+                <div id="profileSuccessToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="3000">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            {{ session('success') }}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
             </div>
             @endif
             @if(session('error'))
@@ -74,13 +80,10 @@
                                 {{-- Avatar Upload --}}
                                 <div class="mb-4 text-center">
                                     <div class="mb-3">
-                                        @if($user->avatar)
-                                        <img src="{{ asset('storage/' . $user->avatar) }}" alt="Profile Avatar" class="rounded-circle shadow-sm avatar-lg">
-                                        @else
-                                        <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm text-secondary avatar-placeholder-lg">
+                                        <img id="avatarPreview" src="{{ $user->avatar ? asset('storage/' . $user->avatar) : '' }}" alt="Profile Avatar" class="rounded-circle shadow-sm avatar-lg {{ $user->avatar ? '' : 'd-none' }}">
+                                        <div id="avatarPlaceholder" class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm text-secondary avatar-placeholder-lg {{ $user->avatar ? 'd-none' : '' }}">
                                             <i class="fa-solid fa-user"></i>
                                         </div>
-                                        @endif
                                     </div>
                                     <div class="d-inline-block">
                                         <label class="btn btn-sm btn-outline-primary" for="avatarInput">
@@ -237,11 +240,11 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Card Number</label>
-                            <input type="text" name="account_number" class="form-control" placeholder="XXXX XXXX XXXX XXXX">
+                            <input type="text" name="account_number" class="form-control" placeholder="0000 0000 0000 0000" id="profile_card_number" maxlength="19" pattern="\d{4}\s?\d{4}\s?\d{4}\s?\d{4}" inputmode="numeric" autocomplete="cc-number">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Expiry Date</label>
-                            <input type="text" name="expiry_date" class="form-control" placeholder="MM/YY">
+                            <input type="text" name="expiry_date" class="form-control" placeholder="MM/YY" id="profile_expiry_date" maxlength="5" pattern="\d{2}/\d{2}" inputmode="numeric" autocomplete="cc-exp">
                         </div>
                     </div>
 
@@ -256,7 +259,7 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Mobile Number</label>
-                            <input type="text" name="account_number" class="form-control" placeholder="09XX XXX XXXX" disabled>
+                            <input type="text" name="account_number" class="form-control" placeholder="09XX XXX XXXX" id="profile_wallet_number" maxlength="11" pattern="[0-9]{11}" inputmode="numeric" autocomplete="tel" disabled>
                         </div>
                     </div>
                 </div>

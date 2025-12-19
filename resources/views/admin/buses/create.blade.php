@@ -25,9 +25,10 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-bold small">Bus Type</label>
-                        <select name="type" class="form-select" required>
+                        <select name="type" class="form-select" id="busTypeInput" required>
                             <option value="regular" {{ old('type') == 'regular' ? 'selected' : '' }}>Regular (Aircon)</option>
                             <option value="deluxe" {{ old('type') == 'deluxe' ? 'selected' : '' }}>Deluxe (Restroom)</option>
+                            <option value="luxury" {{ old('type') == 'luxury' ? 'selected' : '' }}>Luxury</option>
                         </select>
                         @error('type')
                         <div class="text-danger small mt-1">{{ $message }}</div>
@@ -35,7 +36,7 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-bold small">Seating Capacity</label>
-                        <input type="number" name="capacity" class="form-control" placeholder="e.g. 45" value="{{ old('capacity') }}" min="10" max="60" required>
+                        <input type="number" name="capacity" id="busCapacityInput" class="form-control" placeholder="e.g. 45" value="{{ old('capacity') }}" min="10" max="60" required>
                         @error('capacity')
                         <div class="text-danger small mt-1">{{ $message }}</div>
                         @enderror
@@ -71,3 +72,30 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const typeEl = document.getElementById('busTypeInput');
+        const capEl = document.getElementById('busCapacityInput');
+
+        function applyCapacity() {
+            const type = (typeEl?.value || '').toLowerCase();
+            if (type === 'regular') {
+                capEl.value = 40;
+                capEl.readOnly = true;
+            } else if (type === 'deluxe') {
+                capEl.value = 20;
+                capEl.readOnly = true;
+            } else {
+                capEl.readOnly = false;
+            }
+        }
+
+        if (typeEl && capEl) {
+            typeEl.addEventListener('change', applyCapacity);
+            applyCapacity();
+        }
+    });
+</script>
+@endpush

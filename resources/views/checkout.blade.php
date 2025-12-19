@@ -6,6 +6,10 @@
 
 @section('content')
 <div class="container page-container">
+    <div class="page-header-left mb-4">
+        <h1 class="page-title mb-1">Checkout</h1>
+        <p class="page-subtitle mb-0">Confirm passenger details and complete payment.</p>
+    </div>
     <div class="row g-5">
 
         {{-- LEFT COLUMN: Forms --}}
@@ -92,7 +96,7 @@
                             <h6 class="fw-bold mb-3">Select Payment Option</h6>
 
                             {{-- Tabs/Radio for Type --}}
-                            <div class="d-flex gap-3 mb-4">
+                            <div class="d-flex gap-3 mb-4 checkout-payment-tabs">
                                 <div class="form-check ps-0">
                                     <input type="radio" class="btn-check" name="new_payment_type" id="type_card" value="card" checked autocomplete="off">
                                     <label class="btn btn-outline-primary px-4 py-2 rounded-3 fw-bold" for="type_card">
@@ -112,16 +116,14 @@
                                 <div class="mb-3">
                                     <label class="form-label text-muted small fw-bold">Card Number</label>
                                     <input type="text" name="card_number" class="form-control" placeholder="0000 0000 0000 0000"
-                                        maxlength="16" pattern="\d{16}" inputmode="numeric"
-                                        oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 16)">
+                                        id="card_number" maxlength="19" pattern="\d{4}\s?\d{4}\s?\d{4}\s?\d{4}" inputmode="numeric">
                                 </div>
                                 <div class="row">
                                     <div class="col-6">
                                         <label class="form-label text-muted small fw-bold">Expiry</label>
                                         <div class="d-flex gap-2">
                                             <input type="text" name="card_expiry_month" class="form-control" placeholder="MM"
-                                                maxlength="2" pattern="\d{1,2}" inputmode="numeric" style="width: 60px;"
-                                                oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 2)">
+                                                id="card_expiry_month" maxlength="2" pattern="\d{1,2}" inputmode="numeric" style="width: 60px;">
                                             <span class="align-self-center">/</span>
                                             <input type="text" name="card_expiry_year" class="form-control" placeholder="YYYY"
                                                 maxlength="4" pattern="\d{4}" inputmode="numeric" style="width: 80px;"

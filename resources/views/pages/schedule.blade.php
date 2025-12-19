@@ -10,43 +10,42 @@
     {{-- Horizontal Search Form --}}
     <div class="card card-unified mb-5">
         <div class="card-body">
-            <form action="{{ route('trips.search') }}" method="GET" class="row g-3 align-items-end">
-                {{-- Hidden defaults for quick search --}}
-                <input type="hidden" name="trip_type" value="oneway">
-                <input type="hidden" name="adults" value="1">
-                <input type="hidden" name="children" value="0">
+            <form action="{{ route('pages.schedule') }}" method="GET" class="row g-3 align-items-end">
 
                 <div class="col-md-3">
                     <label class="form-label small fw-bold text-muted">From</label>
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-location-dot" style="color: #1E293B;"></i></span>
-                        <select name="origin" class="form-select border-start-0 ps-0" required>
-                            <option value="" selected disabled>Select Origin</option>
+                        <input list="scheduleOriginOptions" name="origin" class="form-control border-start-0 ps-0" placeholder="Type origin" value="{{ request('origin') }}">
+                        <datalist id="scheduleOriginOptions">
                             @foreach($terminals as $t)
-                            <option value="{{ $t->id }}">{{ $t->city }}</option>
+                            <option value="{{ $t->city }}{{ $t->name ? ' - ' . $t->name : '' }}"></option>
                             @endforeach
-                        </select>
+                        </datalist>
                     </div>
                 </div>
+
                 <div class="col-md-3">
                     <label class="form-label small fw-bold text-muted">To</label>
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-location-crosshairs text-danger"></i></span>
-                        <select name="destination" class="form-select border-start-0 ps-0" required>
-                            <option value="" selected disabled>Select Destination</option>
+                        <input list="scheduleDestinationOptions" name="destination" class="form-control border-start-0 ps-0" placeholder="Type destination" value="{{ request('destination') }}">
+                        <datalist id="scheduleDestinationOptions">
                             @foreach($terminals as $t)
-                            <option value="{{ $t->id }}">{{ $t->city }}</option>
+                            <option value="{{ $t->city }}{{ $t->name ? ' - ' . $t->name : '' }}"></option>
                             @endforeach
-                        </select>
+                        </datalist>
                     </div>
                 </div>
+
                 <div class="col-md-3">
                     <label class="form-label small fw-bold text-muted">Date</label>
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0"><i class="fa-regular fa-calendar text-muted"></i></span>
-                        <input type="date" name="date" class="form-control border-start-0 ps-0" required min="{{ date('Y-m-d') }}">
+                        <input type="date" name="date" class="form-control border-start-0 ps-0" value="{{ request('date') }}" min="{{ date('Y-m-d') }}">
                     </div>
                 </div>
+
                 <div class="col-md-3">
                     <button type="submit" class="btn btn-unified btn-unified-md w-100" style="background-color: #FFC107; color: #1E293B; font-weight: 700;">
                         <i class="fa-solid fa-magnifying-glass me-2"></i> Find Tickets
@@ -57,67 +56,115 @@
     </div>
 
     <div class="card card-unified">
-        <div class="table-responsive">
-            <table class="table table-hover table-unified">
-                <thead>
-                    <tr>
-                        <th class="ps-4 py-3">Date & Time</th>
-                        <th class="py-3">Route</th>
-                        <th class="py-3">Bus</th>
-                        <th class="py-3">Price</th>
-                        <th class="py-3 text-end pe-4">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($schedules as $schedule)
-                    <tr>
-                        <td class="ps-4">
-                            <div class="fw-bold">{{ \Carbon\Carbon::parse($schedule->departure_date)->format('M d, Y') }}</div>
-                            <div class="text-muted small">{{ \Carbon\Carbon::parse($schedule->departure_time)->format('h:i A') }}</div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <span class="fw-bold text-dark">{{ $schedule->origin->city }}</span>
-                                <i class="fa-solid fa-arrow-right mx-2 text-muted small"></i>
-                                <span class="fw-bold text-dark">{{ $schedule->destination->city }}</span>
-                            </div>
-                        </td>
-                        <td>
-                            <div>{{ $schedule->bus->name ?? 'Bus ' . $schedule->bus->code }}</div>
-                            <span class="badge bg-secondary bg-opacity-10 text-secondary border">{{ ucfirst($schedule->bus->type) }}</span>
-                        </td>
-                        <td class="fw-bold text-danger">
-                            ₱{{ number_format($schedule->price, 2) }}
-                        </td>
-                        <td class="text-end pe-4">
-                            <button type="button" class="btn btn-dark btn-unified btn-unified-sm rounded-pill"
-                                data-bs-toggle="modal"
-                                data-bs-target="#passengerModal"
-                                data-schedule-id="{{ $schedule->id }}"
-                                data-origin="{{ $schedule->origin_id }}"
-                                data-destination="{{ $schedule->destination_id }}"
-                                data-date="{{ $schedule->departure_date }}">
-                                Book Now
-                            </button>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="5">
-                            <div class="empty-state">
-                                <i class="fa-solid fa-calendar-xmark empty-state-icon"></i>
-                                <p class="empty-state-text">No active schedules found.</p>
-                                <a href="{{ route('home') }}" class="btn btn-outline-dark btn-unified btn-unified-sm">Go to Home</a>
-                            </div>
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
+        <div class="d-none d-lg-block">
+            <div class="table-responsive">
+                <table class="table table-hover table-unified">
+                    <thead>
+                        <tr>
+                            <th class="ps-4 py-3">Date & Time</th>
+                            <th class="py-3">Route</th>
+                            <th class="py-3">Bus</th>
+                            <th class="py-3">Price</th>
+                            <th class="py-3 text-end pe-4">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($schedules as $schedule)
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-bold">{{ \Carbon\Carbon::parse($schedule->departure_date)->format('M d, Y') }}</div>
+                                <div class="text-muted small">{{ \Carbon\Carbon::parse($schedule->departure_time)->format('h:i A') }}</div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <span class="fw-bold text-dark">{{ $schedule->origin->city }}</span>
+                                    <i class="fa-solid fa-arrow-right mx-2 text-muted small"></i>
+                                    <span class="fw-bold text-dark">{{ $schedule->destination->city }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div>{{ $schedule->bus->name ?? 'Bus ' . $schedule->bus->code }}</div>
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border">{{ ucfirst($schedule->bus->type) }}</span>
+                            </td>
+                            <td class="fw-bold text-danger">₱{{ number_format($schedule->price, 2) }}</td>
+                            <td class="text-end pe-4">
+                                <button type="button" class="btn btn-dark btn-unified btn-unified-sm rounded-pill"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#passengerModal"
+                                    data-schedule-id="{{ $schedule->id }}"
+                                    data-origin="{{ $schedule->origin_id }}"
+                                    data-destination="{{ $schedule->destination_id }}"
+                                    data-date="{{ $schedule->departure_date }}">
+                                    Book Now
+                                </button>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="5">
+                                <div class="empty-state">
+                                    <i class="fa-solid fa-calendar-xmark empty-state-icon"></i>
+                                    <p class="empty-state-text">No active schedules found.</p>
+                                    <a href="{{ route('home') }}" class="btn btn-outline-dark btn-unified btn-unified-sm">Go to Home</a>
+                                </div>
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
+
+        <div class="d-lg-none p-3">
+            @forelse($schedules as $schedule)
+            <div class="card border-0 bg-light rounded-4 mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="fw-bold">
+                                {{ $schedule->origin->city }}
+                                <i class="fa-solid fa-arrow-right mx-1 text-muted small"></i>
+                                {{ $schedule->destination->city }}
+                            </div>
+                            <div class="text-muted small mt-1">
+                                {{ \Carbon\Carbon::parse($schedule->departure_date)->format('M d, Y') }} •
+                                {{ \Carbon\Carbon::parse($schedule->departure_time)->format('h:i A') }}
+                            </div>
+                        </div>
+                        <div class="fw-bold text-danger">₱{{ number_format($schedule->price, 2) }}</div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="small text-muted">
+                            <span class="fw-bold text-dark">{{ $schedule->bus->name ?? 'Bus ' . $schedule->bus->code }}</span>
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary border ms-2">{{ ucfirst($schedule->bus->type) }}</span>
+                        </div>
+                        <button type="button" class="btn btn-navy btn-unified btn-unified-sm fw-bold"
+                            data-bs-toggle="modal"
+                            data-bs-target="#passengerModal"
+                            data-schedule-id="{{ $schedule->id }}"
+                            data-origin="{{ $schedule->origin_id }}"
+                            data-destination="{{ $schedule->destination_id }}"
+                            data-date="{{ $schedule->departure_date }}">
+                            Book
+                        </button>
+                    </div>
+                </div>
+            </div>
+            @empty
+            <div class="empty-state">
+                <i class="fa-solid fa-calendar-xmark empty-state-icon"></i>
+                <p class="empty-state-text">No active schedules found.</p>
+                <a href="{{ route('home') }}" class="btn btn-outline-dark btn-unified btn-unified-sm">Go to Home</a>
+            </div>
+            @endforelse
+        </div>
+
         @if($schedules->hasPages())
         <div class="card-footer bg-white py-3">
-            {{ $schedules->links('pagination::bootstrap-5') }}
+            <div class="d-flex justify-content-center">
+                {{ $schedules->appends(request()->query())->links('pagination::bootstrap-5') }}
+            </div>
         </div>
         @endif
     </div>
@@ -158,12 +205,19 @@
                         </div>
                     </div>
 
+                    <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" value="1" id="modal-whole-bus-toggle">
+                        <label class="form-check-label fw-bold" for="modal-whole-bus-toggle">Book the whole bus</label>
+                        <div class="text-muted small">Only available if the bus is fully unbooked.</div>
+                    </div>
+
                     {{-- Hidden fields populated by JS --}}
                     <input type="hidden" name="schedule_id" id="modal-schedule-id">
                     <input type="hidden" name="trip_type" value="oneway">
                     <input type="hidden" name="origin" id="modal-origin">
                     <input type="hidden" name="destination" id="modal-destination">
                     <input type="hidden" name="date" id="modal-date">
+                    <input type="hidden" name="whole_bus" id="modal-whole-bus" value="0">
                 </div>
                 <div class="modal-footer border-0 pt-0">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -179,21 +233,37 @@
 @push('scripts')
 <script>
     const passengerModal = document.getElementById('passengerModal');
+    const wholeBusToggle = document.getElementById('modal-whole-bus-toggle');
+    const wholeBusInput = document.getElementById('modal-whole-bus');
+
+    function applyWholeBusState(enabled) {
+        wholeBusInput.value = enabled ? '1' : '0';
+        document.getElementById('modal-adults').disabled = enabled;
+        document.getElementById('modal-children').disabled = enabled;
+        if (enabled) {
+            document.getElementById('modal-adults').value = '1';
+            document.getElementById('modal-children').value = '0';
+        }
+    }
+
     passengerModal.addEventListener('show.bs.modal', function(event) {
         const button = event.relatedTarget;
 
-        // Extract data from button attributes
         document.getElementById('modal-schedule-id').value = button.getAttribute('data-schedule-id');
         document.getElementById('modal-origin').value = button.getAttribute('data-origin');
         document.getElementById('modal-destination').value = button.getAttribute('data-destination');
         document.getElementById('modal-date').value = button.getAttribute('data-date');
 
-        // Reset selections
-        document.getElementById('modal-adults').value = '';
+        document.getElementById('modal-adults').value = '1';
         document.getElementById('modal-children').value = '0';
+        wholeBusToggle.checked = false;
+        applyWholeBusState(false);
     });
 
-    // Set form action to seats route
+    wholeBusToggle.addEventListener('change', function() {
+        applyWholeBusState(this.checked);
+    });
+
     document.getElementById('passengerForm').action = '{{ route("trips.seats") }}';
 </script>
 @endpush

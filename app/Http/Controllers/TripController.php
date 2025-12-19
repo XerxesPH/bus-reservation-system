@@ -15,6 +15,8 @@ class TripController extends Controller
     {
         $step = $request->query('step', 1);
 
+        $wholeBus = $request->boolean('whole_bus');
+
         // === VALIDATION: Check for Return Trip Availability (Round Trip Only) ===
         // This ensures we don't let the user select an outbound bus if they can't return.
         if ($request->input('trip_type') === 'roundtrip' && $step == 1) {
@@ -28,9 +30,14 @@ class TripController extends Controller
                 ->when($request->input('return_date') == \Carbon\Carbon::today()->toDateString(), function ($query) {
                     $query->whereTime('departure_time', '>', \Carbon\Carbon::now()->format('H:i:s'));
                 })
+                ->with('bus')
                 ->get();
 
-            $hasAvailableReturn = $returnSchedules->contains(function ($schedule) use ($requiredSeats) {
+            $hasAvailableReturn = $returnSchedules->contains(function ($schedule) use ($requiredSeats, $wholeBus) {
+                if ($wholeBus) {
+                    $capacity = $schedule->bus->capacity ?? 0;
+                    return $capacity > 0 && $schedule->seats_left >= $capacity;
+                }
                 return $schedule->seats_left >= $requiredSeats;
             });
 
@@ -39,7 +46,9 @@ class TripController extends Controller
             }
 
             if (! $hasAvailableReturn) {
-                return redirect()->route('home')->with('error', 'All return buses are fully booked for your selected date. Please choose another date.');
+                return redirect()->route('home')->with('error', $wholeBus
+                    ? 'No return buses are available for whole bus booking on your selected date. Please choose another date.'
+                    : 'All return buses are fully booked for your selected date. Please choose another date.');
             }
 
             // 2. Check Outbound Schedule Availability (Seats)
@@ -50,9 +59,14 @@ class TripController extends Controller
                 ->when($request->input('date') == \Carbon\Carbon::today()->toDateString(), function ($query) {
                     $query->whereTime('departure_time', '>', \Carbon\Carbon::now()->format('H:i:s'));
                 })
+                ->with('bus')
                 ->get();
 
-            $hasAvailableOutbound = $outboundSchedules->contains(function ($schedule) use ($requiredSeats) {
+            $hasAvailableOutbound = $outboundSchedules->contains(function ($schedule) use ($requiredSeats, $wholeBus) {
+                if ($wholeBus) {
+                    $capacity = $schedule->bus->capacity ?? 0;
+                    return $capacity > 0 && $schedule->seats_left >= $capacity;
+                }
                 return $schedule->seats_left >= $requiredSeats;
             });
 
@@ -61,7 +75,9 @@ class TripController extends Controller
             }
 
             if (! $hasAvailableOutbound) {
-                return redirect()->route('home')->with('error', 'All outbound buses are fully booked for your selected date. Please choose another date.');
+                return redirect()->route('home')->with('error', $wholeBus
+                    ? 'No outbound buses are available for whole bus booking on your selected date. Please choose another date.'
+                    : 'All outbound buses are fully booked for your selected date. Please choose another date.');
             }
         }
 
@@ -99,6 +115,13 @@ class TripController extends Controller
             })
             ->with(['bus', 'origin', 'destination'])
             ->get();
+
+        if ($wholeBus) {
+            $trips = $trips->filter(function ($trip) {
+                $capacity = $trip->bus->capacity ?? 0;
+                return $capacity > 0 && $trip->seats_left >= $capacity;
+            })->values();
+        }
 
         $origin = Terminal::find($searchOrigin);
         $destination = Terminal::find($searchDest);
@@ -140,8 +163,14 @@ class TripController extends Controller
         }
         // === CRITICAL FIX END ===
 
+        $wholeBus = $request->boolean('whole_bus');
         $adults = (int) $request->query('adults', 1);
         $children = (int) $request->query('children', 0);
+
+        if ($wholeBus) {
+            $adults = (int) ($trip->bus->capacity ?? $adults);
+            $children = 0;
+        }
 
         // Bundle search params to pass to view (prevents data loss)
         $searchParams = [
@@ -154,12 +183,17 @@ class TripController extends Controller
             'date' => $request->query('date'),
             'adults' => $adults,
             'children' => $children,
+            'whole_bus' => $wholeBus ? 1 : 0,
         ];
 
         // Get Occupied Seats
         $occupiedSeats = Booking::where('schedule_id', $scheduleId)->where('status', 'confirmed')->pluck('seat_numbers')->flatten();
         $returnBookings = Booking::where('return_schedule_id', $scheduleId)->where('status', 'confirmed')->pluck('return_seat_numbers')->flatten();
         $occupiedSeats = $occupiedSeats->merge($returnBookings)->unique()->toArray();
+
+        if ($wholeBus && !empty($occupiedSeats)) {
+            return redirect()->back()->with('error', 'Whole bus booking is not available for this schedule.');
+        }
 
         return view('trips.seats', compact('trip', 'occupiedSeats', 'leg', 'adults', 'children', 'searchParams'));
     }
@@ -172,6 +206,8 @@ class TripController extends Controller
             'selected_seats' => 'required',
             'return_date' => 'required',
         ]);
+
+        $wholeBus = $request->boolean('whole_bus');
 
         // === DOUBLE CHECK VALIDATION: Verify Return Trip Availability ===
         // This prevents the user from landing on Step 2 (Result URL) if the return leg is invalid.
@@ -210,6 +246,7 @@ class TripController extends Controller
             'seats' => $seats,
             'adults' => $request->adults,
             'children' => $request->children,
+            'whole_bus' => $wholeBus ? 1 : 0,
         ]);
 
         // 3. Redirect to Search (Step 2)
@@ -226,6 +263,7 @@ class TripController extends Controller
             'original_date' => $request->original_date,
             'adults' => $request->adults,
             'children' => $request->children,
+            'whole_bus' => $wholeBus ? 1 : 0,
         ]);
     }
 
@@ -297,7 +335,35 @@ class TripController extends Controller
 
     public function showSuccess(Booking $booking)
     {
-        $booking->load(['user', 'schedule.bus', 'schedule.origin', 'schedule.destination', 'returnSchedule.bus', 'returnSchedule.origin', 'returnSchedule.destination']);
+        $booking->load([
+            'user',
+            'schedule.bus',
+            'schedule.origin',
+            'schedule.destination',
+            'returnSchedule.bus',
+            'returnSchedule.origin',
+            'returnSchedule.destination',
+            'linkedBooking.schedule.bus',
+            'linkedBooking.schedule.origin',
+            'linkedBooking.schedule.destination',
+        ]);
         return view('bookings.success', compact('booking'));
+    }
+
+    public function showVerifying(Booking $booking)
+    {
+        $booking->load([
+            'user',
+            'schedule.bus',
+            'schedule.origin',
+            'schedule.destination',
+            'returnSchedule.bus',
+            'returnSchedule.origin',
+            'returnSchedule.destination',
+            'linkedBooking.schedule.bus',
+            'linkedBooking.schedule.origin',
+            'linkedBooking.schedule.destination',
+        ]);
+        return view('bookings.verifying', compact('booking'));
     }
 }

@@ -35,11 +35,22 @@
             </div>
 
             <div class="form-group">
+                <label for="password_confirmation">Confirm Password</label>
+                <input type="password" id="password_confirmation" name="password_confirmation" placeholder="" class="@error('password_confirmation') is-invalid @enderror" required>
+                @error('password_confirmation')
+                <span class="error-msg">{{ $message }}</span>
+                @enderror
+            </div>
+
+            <div class="form-group">
                 <label for="dob">Date of Birth</label>
                 <div class="date-input-wrapper">
                     <span class="date-icon">📅</span>
                     <input type="text" id="dob" name="dob" placeholder="12 December 2025" onfocus="(this.type='date')" onblur="if(!this.value)this.type='text'" value="{{ old('dob') }}">
                 </div>
+                @error('dob')
+                <span class="error-msg">{{ $message }}</span>
+                @enderror
             </div>
 
             <div class="form-group">

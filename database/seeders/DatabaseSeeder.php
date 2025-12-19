@@ -16,39 +16,111 @@ class DatabaseSeeder extends Seeder
     /**
      * Calabarzon Terminal Locations for Mesh Network
      */
-    private array $locations = [
-        'PITX (Parañaque)',
-        'Buendia (Pasay)',
-        'Batangas City Grand Terminal',
-        'Lipa City',
-        'Calamba City',
-        'San Pablo City',
-        'Lucena Grand Terminal',
-        'Sta. Cruz, Laguna',
-        'Tagaytay City',
-        'Nasugbu, Batangas',
+    private array $terminalData = [
+        [
+            'name' => 'PITX',
+            'city' => 'Parañaque',
+            'province' => 'Metro Manila',
+            'type' => 'integrated_terminal',
+            'lat' => 14.5093,
+            'lng' => 120.9918,
+        ],
+        [
+            'name' => 'Buendia Terminal',
+            'city' => 'Pasay',
+            'province' => 'Metro Manila',
+            'type' => 'private_terminal',
+            'lat' => 14.5543,
+            'lng' => 120.9972,
+        ],
+        [
+            'name' => 'Batangas City Grand Terminal',
+            'city' => 'Batangas City',
+            'province' => 'Batangas',
+            'type' => 'integrated_terminal',
+            'lat' => 13.7845,
+            'lng' => 121.0744,
+        ],
+        [
+            'name' => 'SM Lipa Bus Terminal',
+            'city' => 'Lipa City',
+            'province' => 'Batangas',
+            'type' => 'private_terminal',
+            'lat' => 13.9427,
+            'lng' => 121.1648,
+        ],
+        [
+            'name' => 'Calamba Terminal',
+            'city' => 'Calamba City',
+            'province' => 'Laguna',
+            'type' => 'integrated_terminal',
+            'lat' => 14.1923,
+            'lng' => 121.1345,
+        ],
+        [
+            'name' => 'San Pablo City Terminal',
+            'city' => 'San Pablo City',
+            'province' => 'Laguna',
+            'type' => 'integrated_terminal',
+            'lat' => 14.0688,
+            'lng' => 121.3236,
+        ],
+        [
+            'name' => 'Sta. Cruz Terminal',
+            'city' => 'Santa Cruz',
+            'province' => 'Laguna',
+            'type' => 'integrated_terminal',
+            'lat' => 14.2758,
+            'lng' => 121.4132,
+        ],
+        [
+            'name' => 'Lucena Grand Terminal',
+            'city' => 'Lucena City',
+            'province' => 'Quezon',
+            'type' => 'integrated_terminal',
+            'lat' => 13.9575,
+            'lng' => 121.6022,
+        ],
+        [
+            'name' => 'Tagaytay City Terminal',
+            'city' => 'Tagaytay City',
+            'province' => 'Cavite',
+            'type' => 'integrated_terminal',
+            'lat' => 14.1153,
+            'lng' => 120.9619,
+        ],
+        [
+            'name' => 'Nasugbu Terminal',
+            'city' => 'Nasugbu',
+            'province' => 'Batangas',
+            'type' => 'integrated_terminal',
+            'lat' => 14.0722,
+            'lng' => 120.6322,
+        ],
+        [
+            'name' => 'Dasmariñas Terminal',
+            'city' => 'Dasmariñas',
+            'province' => 'Cavite',
+            'type' => 'integrated_terminal',
+            'lat' => 14.3290,
+            'lng' => 120.9367,
+        ],
+        [
+            'name' => 'Antipolo Terminal',
+            'city' => 'Antipolo City',
+            'province' => 'Rizal',
+            'type' => 'integrated_terminal',
+            'lat' => 14.5869,
+            'lng' => 121.1752,
+        ],
     ];
+
+    private array $timeslots = ['06:00:00', '10:00:00', '14:00:00', '18:00:00'];
 
     /**
      * Terminal coordinates for distance calculation
      */
-    private array $coordinates = [
-        'PITX (Parañaque)' => ['lat' => 14.5093, 'lng' => 120.9918],
-        'Buendia (Pasay)' => ['lat' => 14.5543, 'lng' => 120.9972],
-        'Batangas City Grand Terminal' => ['lat' => 13.7845, 'lng' => 121.0744],
-        'Lipa City' => ['lat' => 13.9427, 'lng' => 121.1648],
-        'Calamba City' => ['lat' => 14.1923, 'lng' => 121.1345],
-        'San Pablo City' => ['lat' => 14.0688, 'lng' => 121.3236],
-        'Lucena Grand Terminal' => ['lat' => 13.9575, 'lng' => 121.6022],
-        'Sta. Cruz, Laguna' => ['lat' => 14.2758, 'lng' => 121.4132],
-        'Tagaytay City' => ['lat' => 14.1153, 'lng' => 120.9619],
-        'Nasugbu, Batangas' => ['lat' => 14.0722, 'lng' => 120.6322],
-    ];
-
-    /**
-     * Daily departure timeslots
-     */
-    private array $timeslots = ['06:00:00', '12:00:00', '18:00:00'];
+    private array $coordinates = [];
 
     public function run(): void
     {
@@ -79,12 +151,6 @@ class DatabaseSeeder extends Seeder
         $this->command->info('👤 Creating Users...');
         $users = $this->seedUsers();
 
-        // ==========================================
-        // 5. CREATE SAMPLE BOOKINGS
-        // ==========================================
-        $this->command->info('🎫 Creating Sample Bookings...');
-        $this->seedBookings($users);
-
         $this->command->info('✅ Seeding Complete!');
     }
 
@@ -95,24 +161,23 @@ class DatabaseSeeder extends Seeder
     {
         $terminals = [];
 
-        foreach ($this->locations as $location) {
-            $coords = $this->coordinates[$location] ?? ['lat' => 14.0, 'lng' => 121.0];
+        $this->coordinates = [];
 
-            // Parse city and province from location name
-            $parts = explode(',', $location);
-            $city = trim($parts[0]);
-            $province = isset($parts[1]) ? trim($parts[1]) : $this->getProvince($location);
+        foreach ($this->terminalData as $terminal) {
+            $name = $terminal['name'];
 
-            $terminals[$location] = Terminal::updateOrCreate(
-                ['name' => $location],
+            $terminals[$name] = Terminal::updateOrCreate(
+                ['name' => $name],
                 [
-                    'city' => $city,
-                    'province' => $province,
-                    'type' => 'integrated_terminal',
-                    'latitude' => $coords['lat'],
-                    'longitude' => $coords['lng'],
+                    'city' => $terminal['city'],
+                    'province' => $terminal['province'],
+                    'type' => $terminal['type'],
+                    'latitude' => $terminal['lat'],
+                    'longitude' => $terminal['lng'],
                 ]
             );
+
+            $this->coordinates[$name] = ['lat' => $terminal['lat'], 'lng' => $terminal['lng']];
         }
 
         $this->command->info("   Created " . count($terminals) . " terminals");
@@ -151,30 +216,53 @@ class DatabaseSeeder extends Seeder
     private function seedBuses(): array
     {
         $buses = [];
-        $busNumber = 1001;
 
-        // Create Regular Buses
-        for ($i = 0; $i < 15; $i++) {
+        $drivers = [
+            'Ramon Santos',
+            'Jun dela Cruz',
+            'Mark Reyes',
+            'Anthony Garcia',
+            'Paolo Mendoza',
+            'Arman Bautista',
+            'Joel Navarro',
+            'Michael Flores',
+            'Leo Castillo',
+            'Dennis Aquino',
+            'Carlo Villanueva',
+            'Benjie Ramos',
+        ];
+
+        $terminalCount = count($this->terminalData);
+        $routeCount = $terminalCount * ($terminalCount - 1);
+
+        // IMPORTANT: prevent "ghost bus" schedules by ensuring we have enough buses
+        // so that each route in a given (date, time) slot can have a unique bus.
+        $desiredBusCount = max($routeCount, 132);
+
+        $letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $driverIndex = 0;
+
+        for ($i = 0; $i < $desiredBusCount; $i++) {
+            // 25% deluxe, 75% regular
+            $type = ($i % 4 === 0) ? 'deluxe' : 'regular';
+            $capacity = $type === 'deluxe' ? 20 : 40;
+
+            // Deterministic PH-style plate (unique)
+            $a = $letters[intdiv($i, 26) % 26];
+            $b = $letters[$i % 26];
+            $plate = 'N' . $a . $b . '-' . str_pad((string) (1000 + $i), 4, '0', STR_PAD_LEFT);
+
             $buses[] = Bus::updateOrCreate(
-                ['code' => 'REG-' . $busNumber],
+                ['code' => $plate],
                 [
-                    'type' => 'regular',
-                    'capacity' => 45,
+                    'type' => $type,
+                    'capacity' => $capacity,
+                    'driver_name' => $drivers[$driverIndex % count($drivers)],
+                    'driver_image' => null,
                 ]
             );
-            $busNumber++;
-        }
 
-        // Create Deluxe Buses
-        for ($i = 0; $i < 10; $i++) {
-            $buses[] = Bus::updateOrCreate(
-                ['code' => 'DLX-' . $busNumber],
-                [
-                    'type' => 'deluxe',
-                    'capacity' => 30,
-                ]
-            );
-            $busNumber++;
+            $driverIndex++;
         }
 
         $this->command->info("   Created " . count($buses) . " buses");
@@ -189,23 +277,20 @@ class DatabaseSeeder extends Seeder
     {
         $daysAhead = 14; // Generate schedules for 2 weeks
         $scheduleCount = 0;
-        $busIndex = 0;
         $totalBuses = count($buses);
 
         // ==========================================
         // MESH NETWORK: Every Origin to Every Destination
         // ==========================================
-        foreach ($this->locations as $originName) {
-            foreach ($this->locations as $destName) {
-                // Skip if origin === destination (bus can't go to itself)
+        $terminalNames = array_keys($terminals);
+
+        $routes = [];
+        foreach ($terminalNames as $originName) {
+            foreach ($terminalNames as $destName) {
                 if ($originName === $destName) {
                     continue;
                 }
 
-                $origin = $terminals[$originName];
-                $dest = $terminals[$destName];
-
-                // Calculate price based on distance
                 $distance = $this->calculateDistance(
                     $this->coordinates[$originName]['lat'],
                     $this->coordinates[$originName]['lng'],
@@ -213,50 +298,58 @@ class DatabaseSeeder extends Seeder
                     $this->coordinates[$destName]['lng']
                 );
 
-                // Price: ~₱3-5 per km, minimum ₱80
                 $basePrice = max(80, round($distance * rand(3, 5)));
 
-                // Travel time: ~1 hour per 40km, between 1-4 hours
-                $travelHours = max(1, min(4, round($distance / 40, 1)));
+                $routes[] = [
+                    'origin' => $terminals[$originName],
+                    'dest' => $terminals[$destName],
+                    'base_price' => $basePrice,
+                ];
+            }
+        }
 
-                // Generate schedules for each day
-                for ($day = 0; $day < $daysAhead; $day++) {
-                    $date = Carbon::today()->addDays($day)->format('Y-m-d');
+        if ($totalBuses < count($routes)) {
+            $this->command->warn('   Not enough buses for unique-per-timeslot assignment; buses will be reused.');
+        }
 
-                    // 3 daily departures per route
-                    foreach ($this->timeslots as $time) {
-                        // Rotate through buses
-                        $bus = $buses[$busIndex % $totalBuses];
-                        $busIndex++;
+        for ($day = 0; $day < $daysAhead; $day++) {
+            $date = Carbon::today()->addDays($day)->format('Y-m-d');
 
-                        // Deluxe buses get 25% price markup
-                        $price = $bus->type === 'deluxe'
-                            ? round($basePrice * 1.25)
-                            : $basePrice;
+            foreach ($this->timeslots as $time) {
+                // For each (date,time), each route gets a unique bus (no ghost bus)
+                $busOrder = $buses;
+                shuffle($busOrder);
 
-                        Schedule::updateOrCreate(
-                            [
-                                'origin_id' => $origin->id,
-                                'destination_id' => $dest->id,
-                                'departure_date' => $date,
-                                'departure_time' => $time,
-                            ],
-                            [
-                                'bus_id' => $bus->id,
-                                'price' => $price,
-                                'status' => 'scheduled',
-                            ]
-                        );
-                        $scheduleCount++;
-                    }
+                foreach ($routes as $idx => $route) {
+                    $bus = $busOrder[$idx % $totalBuses];
+
+                    $price = $bus->type === 'deluxe'
+                        ? round($route['base_price'] * 1.25)
+                        : $route['base_price'];
+
+                    Schedule::updateOrCreate(
+                        [
+                            'origin_id' => $route['origin']->id,
+                            'destination_id' => $route['dest']->id,
+                            'departure_date' => $date,
+                            'departure_time' => $time,
+                        ],
+                        [
+                            'bus_id' => $bus->id,
+                            'price' => $price,
+                            'status' => 'scheduled',
+                        ]
+                    );
+                    $scheduleCount++;
                 }
             }
         }
 
         // Calculate route count: n * (n-1) where n = number of locations
-        $routeCount = count($this->locations) * (count($this->locations) - 1);
+        $routeCount = count($terminalNames) * (count($terminalNames) - 1);
         $this->command->info("   Created {$routeCount} unique routes");
-        $this->command->info("   Created {$scheduleCount} total schedules ({$daysAhead} days × 3 timeslots)");
+        $timeslotCount = count($this->timeslots);
+        $this->command->info("   Created {$scheduleCount} total schedules ({$daysAhead} days × {$timeslotCount} timeslots)");
     }
 
     /**
@@ -285,36 +378,44 @@ class DatabaseSeeder extends Seeder
     {
         $users = [];
 
-        // Admin User
-        $users['admin'] = User::updateOrCreate(
-            ['email' => 'admin@southernlines.ph'],
-            [
-                'name' => 'System Administrator',
-                'password' => bcrypt('password'),
-                'role' => 'admin',
-            ]
-        );
+        $adminAccounts = [
+            ['email' => 'admin@southernlines.ph', 'name' => 'System Administrator'],
+            ['email' => 'admin2@southernlines.ph', 'name' => 'Operations Admin'],
+        ];
 
-        // Test Passenger
-        $users['passenger'] = User::updateOrCreate(
-            ['email' => 'passenger@example.com'],
-            [
-                'name' => 'Juan Dela Cruz',
-                'password' => bcrypt('password'),
-                'role' => 'user',
-                'contact_number' => '09171234567',
-            ]
-        );
+        foreach ($adminAccounts as $i => $admin) {
+            $u = User::updateOrCreate(
+                ['email' => $admin['email']],
+                [
+                    'name' => $admin['name'],
+                    'password' => bcrypt('password'),
+                    'contact_number' => '09' . rand(10, 99) . rand(100, 999) . rand(1000, 9999),
+                    'age' => rand(25, 55),
+                    'gender' => rand(0, 1) ? 'Male' : 'Female',
+                ]
+            );
+            $u->role = 'admin';
+            $u->save();
+            $users['admin_' . ($i + 1)] = $u;
+        }
 
-        // Additional test user
-        $users['test'] = User::updateOrCreate(
-            ['email' => 'test@example.com'],
-            [
-                'name' => 'Test User',
-                'password' => bcrypt('password'),
-                'role' => 'user',
-            ]
-        );
+        for ($i = 1; $i <= 10; $i++) {
+            $email = "user{$i}@example.com";
+
+            $u = User::updateOrCreate(
+                ['email' => $email],
+                [
+                    'name' => "Test Passenger {$i}",
+                    'password' => bcrypt('password'),
+                    'contact_number' => '09' . rand(10, 99) . rand(100, 999) . rand(1000, 9999),
+                    'age' => rand(18, 60),
+                    'gender' => ['Male', 'Female', 'Other'][rand(0, 2)],
+                ]
+            );
+            $u->role = 'user';
+            $u->save();
+            $users['user_' . $i] = $u;
+        }
 
         $this->command->info("   Created " . count($users) . " users");
         return $users;

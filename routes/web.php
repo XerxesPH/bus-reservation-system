@@ -42,10 +42,14 @@ Route::post('/checkout/process', [App\Http\Controllers\CheckoutController::class
 
 // 6. GUEST BOOKING MANAGEMENT
 Route::get('/manage-booking', [App\Http\Controllers\GuestBookingController::class, 'search'])->name('guest.bookings.search');
+Route::get('/manage-booking/search', function () {
+    return redirect()->route('guest.bookings.search')->with('error', 'Please use the form to search for your booking.');
+})->name('guest.bookings.show.get');
 Route::post('/manage-booking/search', [App\Http\Controllers\GuestBookingController::class, 'show'])->name('guest.bookings.show');
 Route::post('/manage-booking/cancel/{id}', [App\Http\Controllers\GuestBookingController::class, 'cancel'])->name('guest.bookings.cancel');
 
 // 7. Success Page
+Route::get('/booking-verifying/{booking}', [TripController::class, 'showVerifying'])->name('booking.verifying');
 Route::get('/booking-success/{booking}', [TripController::class, 'showSuccess'])->name('booking.success');
 
 // 8. E-TICKET DOWNLOAD

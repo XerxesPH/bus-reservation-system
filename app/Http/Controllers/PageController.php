@@ -12,14 +12,20 @@ class PageController extends Controller
     /**
      * Display the bus schedule.
      */
-    public function schedule()
+    public function schedule(Request $request)
     {
         // Fetch all terminals for the search dropdowns
         $terminals = Terminal::all();
 
+        $filters = $request->validate([
+            'origin' => ['nullable', 'string', 'max:120'],
+            'destination' => ['nullable', 'string', 'max:120'],
+            'date' => ['nullable', 'date'],
+        ]);
+
         // Fetch active schedules, ordered by date/time
         // Filter: Show trips that are strictly in the future
-        $schedules = Schedule::where('status', 'scheduled')
+        $schedulesQuery = Schedule::where('status', 'scheduled')
             ->where(function ($query) {
                 $query->whereDate('departure_date', '>', \Carbon\Carbon::today())
                     ->orWhere(function ($q) {
@@ -27,12 +33,47 @@ class PageController extends Controller
                             ->whereTime('departure_time', '>', \Carbon\Carbon::now());
                     });
             })
-            ->with(['origin', 'destination', 'bus'])
+
+            ->with(['origin', 'destination', 'bus']);
+
+        if (!empty($filters['origin'])) {
+            $origin = $filters['origin'];
+            $originParts = array_values(array_filter(array_map('trim', preg_split('/\s*-\s*/', $origin))));
+            $schedulesQuery->whereHas('origin', function ($q) use ($originParts, $origin) {
+                $parts = !empty($originParts) ? $originParts : [$origin];
+                foreach ($parts as $term) {
+                    $q->where(function ($qq) use ($term) {
+                        $qq->where('city', 'like', "%{$term}%")
+                            ->orWhere('name', 'like', "%{$term}%");
+                    });
+                }
+            });
+        }
+
+        if (!empty($filters['destination'])) {
+            $destination = $filters['destination'];
+            $destinationParts = array_values(array_filter(array_map('trim', preg_split('/\s*-\s*/', $destination))));
+            $schedulesQuery->whereHas('destination', function ($q) use ($destinationParts, $destination) {
+                $parts = !empty($destinationParts) ? $destinationParts : [$destination];
+                foreach ($parts as $term) {
+                    $q->where(function ($qq) use ($term) {
+                        $qq->where('city', 'like', "%{$term}%")
+                            ->orWhere('name', 'like', "%{$term}%");
+                    });
+                }
+            });
+        }
+
+        if (!empty($filters['date'])) {
+            $schedulesQuery->whereDate('departure_date', $filters['date']);
+        }
+
+        $schedules = $schedulesQuery
             ->orderBy('departure_date')
             ->orderBy('departure_time')
             ->paginate(15);
 
-        return view('pages.schedule', compact('schedules', 'terminals'));
+        return view('pages.schedule', compact('schedules', 'terminals', 'filters'));
     }
 
     /**

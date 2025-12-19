@@ -158,6 +158,21 @@
         color: white;
     }
 
+    .booking-widget .passenger-trigger {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        background: white;
+        color: #0F172A;
+    }
+
+    .booking-widget .passenger-trigger .passenger-subtext {
+        color: #64748B;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
     .btn-find-tickets {
         background: var(--amber);
         color: var(--navy);
@@ -467,10 +482,10 @@
         <div class="row justify-content-center">
             <div class="col-lg-10">
                 <div class="booking-widget">
-                    <form action="{{ route('trips.search') }}" method="GET">
+                    <form id="welcomeBookingForm" action="{{ route('trips.search') }}" method="GET">
                         <div class="row g-4">
                             {{-- Origin --}}
-                            <div class="col-md-6 col-lg-3">
+                            <div class="col-md-4">
                                 <label class="form-label">
                                     <i class="fa-solid fa-location-dot me-1"></i> From
                                 </label>
@@ -483,7 +498,7 @@
                             </div>
 
                             {{-- Destination --}}
-                            <div class="col-md-6 col-lg-3">
+                            <div class="col-md-4">
                                 <label class="form-label">
                                     <i class="fa-solid fa-location-crosshairs me-1"></i> To
                                 </label>
@@ -496,35 +511,16 @@
                             </div>
 
                             {{-- Departure Date --}}
-                            <div class="col-md-6 col-lg-3">
+                            <div class="col-md-4">
                                 <label class="form-label">
                                     <i class="fa-regular fa-calendar me-1"></i> Departure
                                 </label>
                                 <input type="date" name="date" class="form-control" required min="{{ date('Y-m-d') }}">
                             </div>
 
-                            {{-- Passengers --}}
-                            <div class="col-md-6 col-lg-3">
-                                <label class="form-label">
-                                    <i class="fa-solid fa-users me-1"></i> Passengers
-                                </label>
-                                <div class="d-flex gap-2">
-                                    <div class="flex-fill">
-                                        <select name="adults" class="form-select">
-                                            @for($i = 1; $i <= 10; $i++)
-                                                <option value="{{ $i }}">{{ $i }} Adult{{ $i > 1 ? 's' : '' }}</option>
-                                                @endfor
-                                        </select>
-                                    </div>
-                                    <div class="flex-fill">
-                                        <select name="children" class="form-select">
-                                            @for($i = 0; $i <= 5; $i++)
-                                                <option value="{{ $i }}">{{ $i }} Child{{ $i != 1 ? 'ren' : '' }}</option>
-                                                @endfor
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
+                            <input type="hidden" name="adults" id="welcome-adults" value="1">
+                            <input type="hidden" name="children" id="welcome-children" value="0">
+                            <input type="hidden" name="whole_bus" id="welcome-whole-bus" value="0">
                         </div>
 
                         {{-- Trip Type & Return Fields --}}
@@ -534,11 +530,11 @@
                                     <span class="form-label mb-0">Trip Type:</span>
                                     <div class="d-flex gap-2">
                                         <label class="trip-type-btn active" id="onewayBtn">
-                                            <input type="radio" name="trip_type" value="oneway" checked class="d-none" onclick="toggleLayout(false)">
+                                            <input type="radio" name="trip_type" value="oneway" checked class="visually-hidden" onclick="toggleLayout(false)">
                                             One Way
                                         </label>
                                         <label class="trip-type-btn" id="roundtripBtn">
-                                            <input type="radio" name="trip_type" value="roundtrip" class="d-none" onclick="toggleLayout(true)">
+                                            <input type="radio" name="trip_type" value="roundtrip" class="visually-hidden" onclick="toggleLayout(true)">
                                             Round Trip
                                         </label>
                                     </div>
@@ -547,12 +543,12 @@
                         </div>
 
                         {{-- Return Fields (Hidden by default) --}}
-                        <div class="row g-4 mt-2" id="returnRow" style="display: none;">
+                        <div class="row g-4 mt-2 d-none" id="returnRow">
                             <div class="col-md-4">
-                                <label class="form-label text-danger">
+                                <label class="form-label">
                                     <i class="fa-solid fa-rotate-left me-1"></i> Return From
                                 </label>
-                                <select name="return_origin" class="form-select border-danger">
+                                <select name="return_origin" class="form-select">
                                     <option value="" selected disabled>Select Terminal</option>
                                     @foreach($terminals as $t)
                                     <option value="{{ $t->id }}">{{ $t->city }} - {{ $t->name }}</option>
@@ -560,10 +556,10 @@
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label text-danger">
+                                <label class="form-label">
                                     <i class="fa-solid fa-rotate-left me-1"></i> Return To
                                 </label>
-                                <select name="return_destination" class="form-select border-danger">
+                                <select name="return_destination" class="form-select">
                                     <option value="" selected disabled>Select Terminal</option>
                                     @foreach($terminals as $t)
                                     <option value="{{ $t->id }}">{{ $t->city }} - {{ $t->name }}</option>
@@ -571,17 +567,17 @@
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label text-danger">
+                                <label class="form-label">
                                     <i class="fa-regular fa-calendar me-1"></i> Return Date
                                 </label>
-                                <input type="date" name="return_date" class="form-control border-danger" min="{{ date('Y-m-d') }}">
+                                <input type="date" name="return_date" class="form-control" min="{{ date('Y-m-d') }}">
                             </div>
                         </div>
 
                         {{-- Submit Button --}}
                         <div class="row mt-4">
                             <div class="col-12">
-                                <button type="submit" class="btn btn-find-tickets w-100">
+                                <button type="button" class="btn btn-find-tickets w-100" id="welcomeOpenPassengerModalBtn">
                                     <i class="fa-solid fa-magnifying-glass me-2"></i> Find Tickets
                                 </button>
                             </div>
@@ -592,6 +588,55 @@
         </div>
     </div>
 </section>
+
+<div class="modal fade" id="welcomePassengerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">
+                    <i class="fa-solid fa-users me-2" style="color: var(--amber);"></i> Select Passengers
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="welcomePassengerModalForm">
+                <div class="modal-body py-4">
+                    <p class="text-muted small mb-4">How many passengers will be travelling?</p>
+
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-muted">Adults</label>
+                            <select id="welcome-modal-adults" class="form-select" required>
+                                @for($i = 1; $i <= 10; $i++)
+                                    <option value="{{ $i }}" {{ $i == 1 ? 'selected' : '' }}>{{ $i }} Adult{{ $i > 1 ? 's' : '' }}</option>
+                                    @endfor
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-muted">Children <span class="text-muted fw-normal">(20% off)</span></label>
+                            <select id="welcome-modal-children" class="form-select">
+                                @for($i = 0; $i <= 5; $i++)
+                                    <option value="{{ $i }}" {{ $i == 0 ? 'selected' : '' }}>{{ $i }} Child{{ $i != 1 ? 'ren' : '' }}</option>
+                                    @endfor
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" value="1" id="welcome-whole-bus-toggle">
+                        <label class="form-check-label fw-bold" for="welcome-whole-bus-toggle">Book the whole bus</label>
+                        <div class="text-muted small">Only shows buses that are fully available.</div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn fw-bold px-4" style="background-color: var(--amber); color: var(--navy);">
+                        Continue
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 {{-- ===== 3. TERMINALS & MAP ===== --}}
 <section class="section-padding bg-light">

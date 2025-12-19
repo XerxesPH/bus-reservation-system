@@ -17,10 +17,33 @@ class TicketController extends Controller
      */
     public function downloadTicket($bookingReference)
     {
-        // Find the booking by reference
-        $booking = Booking::where('booking_reference', $bookingReference)
-            ->with(['schedule.origin', 'schedule.destination', 'schedule.bus', 'user'])
-            ->firstOrFail();
+        $bookings = Booking::where('booking_reference', $bookingReference)
+            ->with([
+                'schedule.origin',
+                'schedule.destination',
+                'schedule.bus',
+                'returnSchedule.origin',
+                'returnSchedule.destination',
+                'returnSchedule.bus',
+                'linkedBooking.schedule.origin',
+                'linkedBooking.schedule.destination',
+                'linkedBooking.schedule.bus',
+                'user',
+            ])
+            ->get();
+
+        $booking = $bookings->firstWhere('trip_type', 'roundtrip_outbound')
+            ?? $bookings->firstWhere('trip_type', 'oneway')
+            ?? $bookings->first();
+
+        if (!$booking) {
+            abort(404);
+        }
+
+        $returnBooking = $bookings->firstWhere('trip_type', 'roundtrip_return');
+        if ($returnBooking && !$booking->linkedBooking) {
+            $booking->setRelation('linkedBooking', $returnBooking);
+        }
 
         // SECURITY: Verify ownership
         // For authenticated users - check if booking belongs to them
@@ -58,10 +81,33 @@ class TicketController extends Controller
      */
     public function viewTicket($bookingReference)
     {
-        // Find the booking by reference
-        $booking = Booking::where('booking_reference', $bookingReference)
-            ->with(['schedule.origin', 'schedule.destination', 'schedule.bus', 'user'])
-            ->firstOrFail();
+        $bookings = Booking::where('booking_reference', $bookingReference)
+            ->with([
+                'schedule.origin',
+                'schedule.destination',
+                'schedule.bus',
+                'returnSchedule.origin',
+                'returnSchedule.destination',
+                'returnSchedule.bus',
+                'linkedBooking.schedule.origin',
+                'linkedBooking.schedule.destination',
+                'linkedBooking.schedule.bus',
+                'user',
+            ])
+            ->get();
+
+        $booking = $bookings->firstWhere('trip_type', 'roundtrip_outbound')
+            ?? $bookings->firstWhere('trip_type', 'oneway')
+            ?? $bookings->first();
+
+        if (!$booking) {
+            abort(404);
+        }
+
+        $returnBooking = $bookings->firstWhere('trip_type', 'roundtrip_return');
+        if ($returnBooking && !$booking->linkedBooking) {
+            $booking->setRelation('linkedBooking', $returnBooking);
+        }
 
         // SECURITY: Verify ownership for authenticated users
         if (Auth::check() && $booking->user_id) {
@@ -96,14 +142,32 @@ class TicketController extends Controller
             'email' => 'required|email',
         ]);
 
-        // Find the booking and verify email ownership
-        $booking = Booking::where('booking_reference', $bookingReference)
+        $bookings = Booking::where('booking_reference', $bookingReference)
             ->where('guest_email', $request->email)
-            ->with(['schedule.origin', 'schedule.destination', 'schedule.bus'])
-            ->first();
+            ->with([
+                'schedule.origin',
+                'schedule.destination',
+                'schedule.bus',
+                'returnSchedule.origin',
+                'returnSchedule.destination',
+                'returnSchedule.bus',
+                'linkedBooking.schedule.origin',
+                'linkedBooking.schedule.destination',
+                'linkedBooking.schedule.bus',
+            ])
+            ->get();
+
+        $booking = $bookings->firstWhere('trip_type', 'roundtrip_outbound')
+            ?? $bookings->firstWhere('trip_type', 'oneway')
+            ?? $bookings->first();
 
         if (!$booking) {
             return back()->with('error', 'Booking not found or email does not match.');
+        }
+
+        $returnBooking = $bookings->firstWhere('trip_type', 'roundtrip_return');
+        if ($returnBooking && !$booking->linkedBooking) {
+            $booking->setRelation('linkedBooking', $returnBooking);
         }
 
         if ($booking->status === 'cancelled') {

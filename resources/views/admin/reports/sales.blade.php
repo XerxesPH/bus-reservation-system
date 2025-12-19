@@ -24,11 +24,11 @@
                         <option value="custom" {{ $period == 'custom' ? 'selected' : '' }}>Custom Range</option>
                     </select>
                 </div>
-                <div class="col-md-3 custom-dates" style="{{ $period != 'custom' ? 'display:none' : '' }}">
+                <div class="col-md-3 custom-dates {{ $period != 'custom' ? 'd-none' : '' }}">
                     <label class="form-label fw-bold">Start Date</label>
                     <input type="date" name="start_date" class="form-control" value="{{ $startDate->format('Y-m-d') }}">
                 </div>
-                <div class="col-md-3 custom-dates" style="{{ $period != 'custom' ? 'display:none' : '' }}">
+                <div class="col-md-3 custom-dates {{ $period != 'custom' ? 'd-none' : '' }}">
                     <label class="form-label fw-bold">End Date</label>
                     <input type="date" name="end_date" class="form-control" value="{{ $endDate->format('Y-m-d') }}">
                 </div>
@@ -77,7 +77,23 @@
                     <h5 class="mb-0 fw-bold">Daily Revenue</h5>
                 </div>
                 <div class="card-body">
+                    @if($dailyRevenue->isEmpty())
+                    <div class="text-center text-muted py-5">
+                        No revenue data for this period.
+                    </div>
+                    @else
                     <canvas id="revenueChart" height="300"></canvas>
+                    <script type="application/json" id="dailyRevenueLabels">
+                        {
+                            !!$dailyRevenue - > pluck('date') - > toJson() !!
+                        }
+                    </script>
+                    <script type="application/json" id="dailyRevenueValues">
+                        {
+                            !!$dailyRevenue - > pluck('total') - > toJson() !!
+                        }
+                    </script>
+                    @endif
                 </div>
             </div>
         </div>
@@ -116,47 +132,154 @@
     function toggleCustomDates(select) {
         const customDates = document.querySelectorAll('.custom-dates');
         customDates.forEach(el => {
-            el.style.display = select.value === 'custom' ? 'block' : 'none';
+            el.classList.toggle('d-none', select.value !== 'custom');
         });
     }
 
     // Revenue Chart
-    const ctx = document.getElementById('revenueChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: {
-                !!json_encode($dailyRevenue - > pluck('date')) !!
-            },
-            datasets: [{
-                label: 'Revenue (₱)',
+    window.addEventListener('load', function() {
+        const chartCanvas = document.getElementById('revenueChart');
+        if (!chartCanvas) return;
+
+        const labelsEl = document.getElementById('dailyRevenueLabels');
+        const valuesEl = document.getElementById('dailyRevenueValues');
+        const labels = labelsEl ? JSON.parse(labelsEl.textContent || '[]') : [];
+        const valuesRaw = valuesEl ? JSON.parse(valuesEl.textContent || '[]') : [];
+        const values = Array.isArray(valuesRaw) ? valuesRaw.map((v) => Number(v) || 0) : [];
+
+        const ctx = chartCanvas.getContext('2d');
+        const parent = chartCanvas.parentElement;
+        const width = parent ? Math.max(parent.clientWidth, 320) : 640;
+        chartCanvas.width = width;
+        chartCanvas.height = 300;
+
+        const formatPeso = (n) => '₱' + Number(n || 0).toLocaleString();
+
+        function renderFallback() {
+            if (!ctx) return;
+            ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+
+            if (!values.length) {
+                ctx.fillStyle = '#64748B';
+                ctx.font = '14px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('No revenue data for this period.', chartCanvas.width / 2, chartCanvas.height / 2);
+                return;
+            }
+
+            const w = chartCanvas.width;
+            const h = chartCanvas.height;
+            const padL = 56;
+            const padR = 20;
+            const padT = 16;
+            const padB = 44;
+            const plotW = w - padL - padR;
+            const plotH = h - padT - padB;
+
+            const maxVal = Math.max(...values);
+            const minVal = Math.min(...values);
+            const range = maxVal === minVal ? 1 : (maxVal - minVal);
+            const stepX = values.length > 1 ? plotW / (values.length - 1) : plotW;
+
+            const points = values.map((v, i) => {
+                const x = padL + stepX * i;
+                const y = padT + (maxVal - v) * (plotH / range);
+                return {
+                    x,
+                    y
+                };
+            });
+
+            ctx.strokeStyle = '#E2E8F0';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padL, padT + plotH);
+            ctx.lineTo(padL + plotW, padT + plotH);
+            ctx.stroke();
+
+            const ticks = 4;
+            ctx.fillStyle = '#64748B';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+
+            for (let i = 0; i <= ticks; i++) {
+                const t = i / ticks;
+                const val = minVal + (range * (1 - t));
+                const y = padT + plotH * t;
+                ctx.strokeStyle = 'rgba(226, 232, 240, 0.7)';
+                ctx.beginPath();
+                ctx.moveTo(padL, y);
+                ctx.lineTo(padL + plotW, y);
+                ctx.stroke();
+                ctx.fillText(formatPeso(val), padL - 8, y);
+            }
+
+            ctx.strokeStyle = '#198754';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            points.forEach((p, idx) => {
+                if (idx === 0) ctx.moveTo(p.x, p.y);
+                else ctx.lineTo(p.x, p.y);
+            });
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(25, 135, 84, 0.12)';
+            ctx.beginPath();
+            points.forEach((p, idx) => {
+                if (idx === 0) ctx.moveTo(p.x, p.y);
+                else ctx.lineTo(p.x, p.y);
+            });
+            ctx.lineTo(padL + plotW, padT + plotH);
+            ctx.lineTo(padL, padT + plotH);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = '#0F172A';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            const first = labels[0] || '';
+            const last = labels[labels.length - 1] || '';
+            ctx.fillText(first, padL, padT + plotH + 10);
+            ctx.fillText(last, padL + plotW, padT + plotH + 10);
+        }
+
+        if (window.Chart) {
+            new Chart(ctx, {
+                type: 'line',
                 data: {
-                    !!json_encode($dailyRevenue - > pluck('total')) !!
+                    labels: labels,
+                    datasets: [{
+                        label: 'Revenue (₱)',
+                        data: values,
+                        borderColor: '#198754',
+                        backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
                 },
-                borderColor: '#198754',
-                backgroundColor: 'rgba(25, 135, 84, 0.1)',
-                fill: true,
-                tension: 0.3
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return '₱' + value.toLocaleString();
+                options: {
+                    responsive: false,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₱' + value.toLocaleString();
+                                }
+                            }
                         }
                     }
                 }
-            }
+            });
+        } else {
+            renderFallback();
         }
     });
 </script>

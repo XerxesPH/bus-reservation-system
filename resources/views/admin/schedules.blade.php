@@ -25,6 +25,26 @@
     </div>
     @endif
 
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ route('admin.schedules') }}" class="row g-2 align-items-center">
+                <div class="col-12 col-lg">
+                    <input type="text" name="q" class="form-control" placeholder="Search schedules (supports multiple terms, e.g. 'BUS-101 2025-12-20 Manila')" value="{{ request('q') }}">
+                </div>
+                <div class="col-12 col-lg-auto d-grid d-lg-flex gap-2">
+                    <button type="submit" class="btn btn-primary fw-bold">
+                        <i class="fa-solid fa-magnifying-glass me-2"></i> Search
+                    </button>
+                    @if(request()->filled('q'))
+                    <a href="{{ route('admin.schedules') }}" class="btn btn-outline-secondary fw-bold">
+                        Clear
+                    </a>
+                    @endif
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -90,6 +110,11 @@
                             <td colspan="6" class="text-center py-5">
                                 <i class="fa-solid fa-calendar-xmark fa-3x text-muted mb-3 opacity-50"></i>
                                 <p class="text-muted fw-bold">No schedules found.</p>
+                                @if(request()->filled('q'))
+                                <div class="mt-2">
+                                    <a href="{{ route('admin.schedules') }}" class="btn btn-sm btn-outline-secondary fw-bold">Clear search</a>
+                                </div>
+                                @endif
                             </td>
                         </tr>
                         @endforelse

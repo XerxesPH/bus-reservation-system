@@ -219,7 +219,10 @@ class CheckoutController extends Controller
                 $outboundBooking = Booking::create([
                     'user_id' => $userId,
                     'schedule_id' => $outboundSchedule->id,
-                    'bus_number' => $outboundSchedule->bus->bus_number, // FIX #2: Lock bus to ticket
+                    'bus_number' => $outboundSchedule->bus->code
+                        ?? $outboundSchedule->bus->bus_number
+                        ?? $outboundSchedule->bus->name
+                        ?? null,
                     'seat_numbers' => $data['outbound']['seats'],
                     'adults' => $data['adults'],
                     'children' => $data['children'],
@@ -283,7 +286,10 @@ class CheckoutController extends Controller
                     $returnBooking = Booking::create([
                         'user_id' => $userId,
                         'schedule_id' => $returnSchedule->id,
-                        'bus_number' => $returnSchedule->bus->bus_number, // FIX #2: Lock bus to ticket
+                        'bus_number' => $returnSchedule->bus->code
+                            ?? $returnSchedule->bus->bus_number
+                            ?? $returnSchedule->bus->name
+                            ?? null,
                         'seat_numbers' => $data['return']['seats'],
                         'adults' => $data['adults'],
                         'children' => $data['children'],
@@ -326,7 +332,12 @@ class CheckoutController extends Controller
         // Clear Session
         session()->forget(['checkout_payload', 'outbound_selection']);
 
-        // Redirect to My Bookings with success message showing the shared reference
+        // Guests should NOT be redirected to auth-only pages.
+        // Send guests to the public success page; authenticated users can go to My Bookings.
+        if (!Auth::check()) {
+            return redirect()->route('booking.verifying', ['booking' => $outboundBookingId]);
+        }
+
         return redirect()->route('user.bookings')->with('success', "Booking confirmed! Your reference is: {$bookingReference}");
     }
 }

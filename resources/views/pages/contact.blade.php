@@ -31,15 +31,15 @@
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <label class="form-label small fw-bold text-muted">Full Name</label>
-                                        <input type="text" name="name" class="form-control" placeholder="John Doe" required>
+                                        <input type="text" name="name" class="form-control" placeholder="John Doe" value="{{ old('name', auth()->check() ? auth()->user()->name : '') }}" required>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label small fw-bold text-muted">Email Address</label>
-                                        <input type="email" name="email" class="form-control" placeholder="john@example.com" required>
+                                        <input type="email" name="email" class="form-control" placeholder="john@example.com" value="{{ old('email', auth()->check() ? auth()->user()->email : '') }}" required>
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label small fw-bold text-muted">Phone Number</label>
-                                        <input type="tel" name="phone" class="form-control" placeholder="+63 9XX XXX XXXX">
+                                        <input type="tel" name="phone" class="form-control" placeholder="+63 9XX XXX XXXX" value="{{ old('phone', auth()->check() ? (auth()->user()->contact_number ?? '') : '') }}">
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label small fw-bold text-muted">Subject</label>

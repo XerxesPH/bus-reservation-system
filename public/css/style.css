@@ -2,6 +2,32 @@
    STYLE.CSS - Global Shared Styles
    ============================================== */
 
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    overflow-x: hidden;
+}
+
+img,
+svg,
+video,
+canvas {
+    max-width: 100%;
+    height: auto;
+}
+
+.main-content-wrapper .table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
 /* 1. Typography & Base */
 body {
     font-family: "Poppins", sans-serif;

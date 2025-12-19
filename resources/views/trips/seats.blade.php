@@ -22,13 +22,19 @@ $btnColor = $isOutbound ? 'btn-dark' : 'btn-success';
 <div class="container page-container" id="seat-selection"
     data-adults="{{ $adults }}"
     data-children="{{ $children }}"
+    data-whole-bus="{{ $searchParams['whole_bus'] ?? 0 }}"
     data-base-price="{{ $trip->price }}">
-    <div class="row g-5">
+    <div class="row g-5 align-items-lg-center">
 
         <div class="col-lg-7">
-            <h4 class="section-title">
-                {{ $isOutbound ? 'Step 1: Outbound Seats' : 'Select Seats' }}
-            </h4>
+            <div class="page-header-left mb-3">
+                <h1 class="page-title mb-1">{{ $isOutbound ? 'Select Outbound Seats' : 'Select Seats' }}</h1>
+                <p class="page-subtitle mb-0">
+                    {{ $trip->origin->city }} to {{ $trip->destination->city }} •
+                    {{ \Carbon\Carbon::parse($trip->departure_date)->format('M d, Y') }}
+                    {{ \Carbon\Carbon::parse($trip->departure_time)->format('h:i A') }}
+                </p>
+            </div>
 
             <div class="alert alert-info d-flex align-items-center">
                 <i class="fa-solid fa-circle-info me-2"></i>
@@ -38,51 +44,49 @@ $btnColor = $isOutbound ? 'btn-dark' : 'btn-success';
                 </div>
             </div>
 
-            <div class="bus-layout shadow-sm p-4 bg-light rounded-4">
-                <div class="driver-seat mb-4 text-end border-bottom pb-2">
-                    <span class="badge bg-secondary"><i class="fa-solid fa-user-tie me-1"></i> Driver</span>
-                </div>
+            <div class="card card-unified">
+                <div class="card-body bg-light">
+                    <div class="driver-seat mb-4 text-end border-bottom pb-2">
+                        <span class="badge bg-secondary"><i class="fa-solid fa-user-tie me-1"></i> Driver</span>
+                    </div>
 
-                <div class="row justify-content-center g-2">
                     @php
                     $seats = $trip->bus->capacity;
                     @endphp
 
-                    @for($i = 1; $i <= $seats; $i++)
-                        @php $isTaken=in_array($i, $occupiedSeats); @endphp
+                    <div class="seat-grid justify-content-center">
+                        @for($i = 1; $i <= $seats; $i++)
+                            @php $isTaken=in_array($i, $occupiedSeats); @endphp
 
-                        {{-- Aisle Spacer --}}
-                        @if(($i-1) % 4==2)
-                        <div class="col-1">
+                            {{-- Aisle Spacer --}}
+                            @if(($i-1) % 4==2)
+                            <div class="seat-aisle">
+                    </div>
+                    @endif
+
+                    <div class="seat-item">
+                        <button type="button"
+                            class="btn seat-btn fw-bold {{ $isTaken ? 'btn-secondary disabled opacity-50' : 'btn-outline-primary' }}"
+                            data-seat="{{ $i }}"
+                            {{ $isTaken ? 'disabled' : '' }}
+                            onclick="toggleSeat(this)">
+                            {{ $i }}
+                        </button>
+                    </div>
+                    @endfor
                 </div>
-                @endif
-
-                <div class="col-2 text-center">
-                    <button type="button"
-                        class="btn w-100 seat-btn fw-bold {{ $isTaken ? 'btn-secondary disabled opacity-50' : 'btn-outline-primary' }}"
-                        data-seat="{{ $i }}"
-                        {{ $isTaken ? 'disabled' : '' }}
-                        onclick="toggleSeat(this)">
-                        {{ $i }}
-                    </button>
-                </div>
-
-                @if($i % 4 == 0)
-                <div class="w-100 my-1"></div>
-                @endif
-                @endfor
             </div>
         </div>
 
         <div class="d-flex justify-content-center gap-4 mt-4">
             <div class="d-flex align-items-center">
-                <div class="btn btn-sm btn-outline-primary disabled seat-btn seat-legend-icon"></div><span class="ms-2 small">Available</span>
+                <div class="btn btn-sm btn-outline-primary disabled seat-legend-icon"></div><span class="ms-2 small">Available</span>
             </div>
             <div class="d-flex align-items-center">
-                <div class="btn btn-sm btn-warning seat-btn seat-legend-icon"></div><span class="ms-2 small">Selected</span>
+                <div class="btn btn-sm btn-warning seat-legend-icon"></div><span class="ms-2 small">Selected</span>
             </div>
             <div class="d-flex align-items-center">
-                <div class="btn btn-sm btn-secondary seat-btn seat-legend-icon"></div><span class="ms-2 small">Booked</span>
+                <div class="btn btn-sm btn-secondary seat-legend-icon"></div><span class="ms-2 small">Booked</span>
             </div>
         </div>
     </div>
@@ -135,6 +139,8 @@ $btnColor = $isOutbound ? 'btn-dark' : 'btn-success';
 
                     {{-- CRITICAL: Pass Trip Type (oneway/roundtrip) to enforce correct booking logic --}}
                     <input type="hidden" name="trip_type" value="{{ $searchParams['trip_type'] }}">
+
+                    <input type="hidden" name="whole_bus" value="{{ $searchParams['whole_bus'] ?? 0 }}">
 
                     {{-- Seat Data --}}
                     <input type="hidden" name="selected_seats" id="input-seats" required>
